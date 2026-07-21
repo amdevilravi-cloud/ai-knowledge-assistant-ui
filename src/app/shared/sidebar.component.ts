@@ -15,16 +15,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             routerLinkActive="active"
             class="nav-link d-flex align-items-center"
           >
-            <i class="bi bi-chat-dots me-2"></i> Start Chat
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            routerLink="/conversations"
-            routerLinkActive="active"
-            class="nav-link d-flex align-items-center"
-          >
-            <i class="bi bi-chat-left-text me-2"></i> My Conversations
+            <i class="bi bi-chat-dots me-2"></i> Chat
           </a>
         </li>
         <li class="nav-item">
@@ -33,19 +24,21 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             routerLinkActive="active"
             class="nav-link d-flex align-items-center"
           >
-            <i class="bi bi-file-text me-2"></i> Documents
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            routerLink="/analytics"
-            routerLinkActive="active"
-            class="nav-link d-flex align-items-center"
-          >
-            <i class="bi bi-graph-up me-2"></i> Analytics
+            <i class="bi bi-file-earmark-pdf me-2"></i> Documents
           </a>
         </li>
       </ul>
+      <hr class="my-3" />
+      <div class="px-3 text-muted">
+        <small>
+          <p class="mb-2">💡 <strong>Tips:</strong></p>
+          <ul class="ps-3">
+            <li>Upload PDFs, TXT, or DOCX files</li>
+            <li>Ask questions about your documents</li>
+            <li>Get AI-powered answers with citations</li>
+          </ul>
+        </small>
+      </div>
     </div>
   `,
   styles: [`

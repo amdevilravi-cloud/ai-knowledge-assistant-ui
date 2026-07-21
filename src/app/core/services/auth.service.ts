@@ -24,23 +24,17 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    this.checkCurrentUser();
+    // Auth disabled - set dummy user
+    this.currentUserSubject.next({
+      id: 'anonymous',
+      username: 'Demo User',
+      email: 'demo@example.com',
+      roles: ['user'],
+    });
   }
 
   checkCurrentUser(): void {
-    this.http
-      .get<AuthResponse>(`${this.apiUrl}/me`)
-      .pipe(
-        tap((response) => {
-          this.currentUserSubject.next(response.user);
-        })
-      )
-      .subscribe({
-        error: (error) => {
-          console.warn('Auth check failed - user not authenticated:', error);
-          this.currentUserSubject.next(null);
-        },
-      });
+    // Auth disabled - skipped
   }
 
   login(username: string, password: string): Observable<AuthResponse> {

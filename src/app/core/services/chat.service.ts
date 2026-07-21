@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface Message {
   id: string;
@@ -11,56 +12,78 @@ export interface Message {
 }
 
 export interface Citation {
-  id: string;
-  source: string;
-  title: string;
-  excerpt: string;
+  documentName: string;
+  documentId: string;
+  pageNumber?: number;
+  chunkIndex?: number;
+  relevanceScore?: number;
+  content: string;
 }
 
-export interface Conversation {
-  id: string;
-  title: string;
-  createdAt: Date;
-  updatedAt: Date;
-  messages: Message[];
+export interface ChatResponse {
+  answer: string;
+  isFromContext: boolean;
+  retrievalCount: number;
+  sourceDocuments?: SourceDocument[];
+}
+
+export interface SourceDocument {
+  documentName: string;
+  documentId: string;
+  citations: Citation[];
+  chunkCount?: number;
+}
+
+export interface ConversationRequest {
+  message: string;
+  historyDepth?: number;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class ChatService {
-  private apiUrl = '/api/chat';
+  private chatApiUrl = 'http://localhost:8080/api/chat/v1';
 
   constructor(private http: HttpClient) {}
 
-  getConversations(): Observable<Conversation[]> {
-    return this.http.get<Conversation[]>(`${this.apiUrl}/conversations`);
+  /**
+   * Start a new conversation session
+   */
+  startConversation(): Observable<{ conversationId: string }> {
+    return this.http.post<{ conversationId: string }>(`${this.chatApiUrl}/converse/start`, {});
   }
 
-  getConversation(id: string): Observable<Conversation> {
-    return this.http.get<Conversation>(`${this.apiUrl}/conversations/${id}`);
-  }
-
-  createConversation(title: string): Observable<Conversation> {
-    return this.http.post<Conversation>(`${this.apiUrl}/conversations`, {
-      title,
-    });
-  }
-
-  sendMessage(conversationId: string, content: string): Observable<Message> {
-    return this.http.post<Message>(
-      `${this.apiUrl}/conversations/${conversationId}/messages`,
-      { content }
+  /**
+   * Send a message in an existing conversation with history
+   */
+  sendMessage(
+    conversationId: string,
+    message: string,
+    historyDepth: number = 5
+  ): Observable<ChatResponse> {
+    const request: ConversationRequest = { message, historyDepth };
+    return this.http.post<ChatResponse>(
+      `${this.chatApiUrl}/converse?conversationId=${conversationId}`,
+      request
     );
   }
 
-  deleteConversation(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/conversations/${id}`);
+  /**
+   * RAG-enhanced chat with document retrieval
+   */
+  ragChat(query: string, topK: number = 5): Observable<ChatResponse> {
+    return this.http.get<ChatResponse>(`${this.chatApiUrl}/rag`, {
+      params: { message: query, topK: topK.toString() },
+    });
   }
 
-  updateConversationTitle(id: string, title: string): Observable<Conversation> {
-    return this.http.put<Conversation>(`${this.apiUrl}/conversations/${id}`, {
-      title,
+  /**
+   * Simple LLM chat without document retrieval
+   */
+  simpleChat(query: string): Observable<string> {
+    return this.http.get(`${this.chatApiUrl}?message=${encodeURIComponent(query)}`, {
+      responseType: 'text',
     });
   }
 }

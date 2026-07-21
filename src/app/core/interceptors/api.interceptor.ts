@@ -1,11 +1,7 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 export const apiInterceptor: HttpInterceptorFn = (request, next) => {
-  const router = inject(Router);
-
   // Only intercept API requests
   if (!request.url.includes('/api/')) {
     return next(request);
@@ -18,9 +14,9 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
 
   return next(apiRequest).pipe(
     catchError((error: HttpErrorResponse) => {
-      console.error('API Error:', error);
-      if (error.status === 401) {
-        router.navigate(['/login']);
+      console.error('API Error [' + error.status + ']:', error.message);
+      if (error.status === 0) {
+        console.error('Connection failed. Ensure backend is running at http://localhost:8080');
       }
       return throwError(() => error);
     })
