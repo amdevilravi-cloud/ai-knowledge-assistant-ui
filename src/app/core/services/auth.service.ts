@@ -36,7 +36,8 @@ export class AuthService {
         })
       )
       .subscribe({
-        error: () => {
+        error: (error) => {
+          console.warn('Auth check failed - user not authenticated:', error);
           this.currentUserSubject.next(null);
         },
       });
