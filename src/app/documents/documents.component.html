@@ -1,0 +1,74 @@
+<div class="container-fluid p-4">
+  <h2 class="mb-4">Knowledge Base Documents</h2>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="input-group">
+        <input
+          type="file"
+          class="form-control"
+          #fileInput
+          (change)="onFileSelected($event)"
+          accept=".pdf,.txt,.docx"
+        />
+        <button
+          class="btn btn-primary"
+          (click)="uploadDocument()"
+          [disabled]="!selectedFile || isUploading || validationError"
+        >
+          {{ isUploading ? 'Uploading...' : 'Upload' }}
+        </button>
+      </div>
+      <small class="text-muted d-block mt-2">
+        📄 Supported formats: PDF, TXT, DOCX (Max size: 50MB)
+      </small>
+      <div *ngIf="validationError" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        {{ validationError }}
+        <button type="button" class="btn-close" (click)="validationError = ''"></button>
+      </div>
+      <div *ngIf="uploadError" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        {{ uploadError }}
+        <button type="button" class="btn-close" (click)="uploadError = ''"></button>
+      </div>
+      <div *ngIf="uploadSuccess" class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+        {{ uploadSuccess }}
+        <button type="button" class="btn-close" (click)="uploadSuccess = ''"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Name</th>
+          <th>Size</th>
+          <th>Pages</th>
+          <th>Chunks</th>
+          <th>Uploaded</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let doc of documents$ | async">
+          <td>{{ doc.documentName }}</td>
+          <td>{{ formatFileSize(doc.fileSize) }}</td>
+          <td>{{ doc.pages || '-' }}</td>
+          <td>{{ doc.chunks || '-' }}</td>
+          <td>{{ doc.uploadedAt | date: 'short' }}</td>
+          <td>
+            <button
+              class="btn btn-sm btn-danger"
+              (click)="deleteDocument(doc.documentId)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="(documents$ | async)?.length === 0" class="text-center p-5 text-muted">
+      <p>No documents uploaded yet. Upload a PDF, TXT, or DOCX file to get started.</p>
+    </div>
+  </div>
+</div>
