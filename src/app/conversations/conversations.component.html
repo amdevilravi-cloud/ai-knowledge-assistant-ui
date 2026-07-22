@@ -1,13 +1,87 @@
 <div class="container-fluid p-4">
   <h2 class="mb-4">My Conversations</h2>
-  <div class="alert alert-info">
-    <p>
-      Conversation history tracking is not available in this version. Each chat session is
-      independent.
+  
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="input-group">
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="Search conversations..." 
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+        >
+        <button class="btn btn-primary" (click)="onSearch()">Search</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && filteredConversations.length === 0" class="alert alert-info">
+    <p *ngIf="conversations.length === 0">
+      No conversations yet. Start a new chat to begin!
     </p>
-    <p>
-      To maintain conversation context, keep the chat window open and continue asking related
-      questions.
+    <p *ngIf="conversations.length > 0">
+      No conversations match your search.
     </p>
+  </div>
+
+  <div class="row" *ngIf="!loading && filteredConversations.length > 0">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Created</th>
+                  <th>Last Activity</th>
+                  <th>Messages</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let conv of filteredConversations">
+                  <td>
+                    <a href="javascript:void(0)" (click)="openConversation(conv.id)" class="text-decoration-none">
+                      {{ conv.title }}
+                    </a>
+                  </td>
+                  <td>{{ formatDate(conv.createdAt) }}</td>
+                  <td>{{ conv.lastActivity ? formatDate(conv.lastActivity) : 'N/A' }}</td>
+                  <td>{{ conv.messageCount }}</td>
+                  <td>
+                    <button 
+                      class="btn btn-sm btn-outline-primary me-2" 
+                      (click)="openConversation(conv.id)"
+                      title="Open conversation"
+                    >
+                      Open
+                    </button>
+                    <button 
+                      class="btn btn-sm btn-outline-danger" 
+                      (click)="deleteConversation(conv.id)"
+                      title="Delete conversation"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

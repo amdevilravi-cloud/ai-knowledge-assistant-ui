@@ -39,11 +39,19 @@ export interface ConversationRequest {
   historyDepth?: number;
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  createdAt: string;
+  lastActivity?: string;
+  messageCount: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class ChatService {
-  private chatApiUrl = 'http://localhost:8080/api/chat/v1';
+  private chatApiUrl = 'http://localhost:8080/api/chat';
 
   constructor(private http: HttpClient) {}
 
@@ -84,6 +92,60 @@ export class ChatService {
   simpleChat(query: string): Observable<string> {
     return this.http.get(`${this.chatApiUrl}?message=${encodeURIComponent(query)}`, {
       responseType: 'text',
+    });
+  }
+
+  /**
+   * Get all conversations
+   */
+  getAllConversations(): Observable<Conversation[]> {
+    return this.http.get<Conversation[]>(`${this.chatApiUrl}/conversations`);
+  }
+
+  /**
+   * Delete a conversation
+   */
+  deleteConversation(conversationId: string): Observable<void> {
+    return this.http.delete<void>(`${this.chatApiUrl}/conversations/${conversationId}`);
+  }
+
+  /**
+   * Search conversations
+   */
+  searchConversations(query: string): Observable<Conversation[]> {
+    return this.http.get<Conversation[]>(`${this.chatApiUrl}/conversations/search`, {
+      params: { query },
+    });
+  }
+
+  /**
+   * Streaming chat using Server-Sent Events
+   */
+  streamChat(message: string): Observable<string> {
+    return new Observable<string>((observer) => {
+      const eventSource = new EventSource(
+        `${this.chatApiUrl}/stream?message=${encodeURIComponent(message)}`
+      );
+
+      eventSource.addEventListener('message', (event: any) => {
+        observer.next(event.data);
+        eventSource.close();
+        observer.complete();
+      });
+
+      eventSource.addEventListener('error', (event: any) => {
+        observer.error(new Error(event.data));
+        eventSource.close();
+      });
+
+      eventSource.onerror = (error) => {
+        observer.error(error);
+        eventSource.close();
+      };
+
+      return () => {
+        eventSource.close();
+      };
     });
   }
 }

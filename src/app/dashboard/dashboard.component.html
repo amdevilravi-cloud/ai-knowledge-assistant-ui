@@ -1,0 +1,100 @@
+<div class="container-fluid p-4">
+  <h2 class="mb-4">Dashboard</h2>
+
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="card stats-card">
+          <div class="card-body">
+            <h5 class="card-title">Total Conversations</h5>
+            <p class="card-text display-4">{{ stats.totalConversations }}</p>
+            <small class="text-muted">All conversation sessions</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card stats-card">
+          <div class="card-body">
+            <h5 class="card-title">Total Documents</h5>
+            <p class="card-text display-4">{{ stats.totalDocuments }}</p>
+            <small class="text-muted">Uploaded documents</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card stats-card">
+          <div class="card-body">
+            <h5 class="card-title">Total Chunks</h5>
+            <p class="card-text display-4">{{ stats.totalChunks }}</p>
+            <small class="text-muted">Document chunks indexed</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Recent Conversations</h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="stats.recentActivity.length === 0" class="text-center text-muted">
+              No recent conversations
+            </div>
+            <div *ngIf="stats.recentActivity.length > 0">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Created</th>
+                    <th>Last Activity</th>
+                    <th>Messages</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let conv of stats.recentActivity">
+                    <td>{{ conv.title }}</td>
+                    <td>{{ formatDate(conv.createdAt) }}</td>
+                    <td>{{ conv.lastActivity ? formatDate(conv.lastActivity) : 'N/A' }}</td>
+                    <td>{{ conv.messageCount }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Quick Actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="d-flex gap-3">
+              <a routerLink="/chat" class="btn btn-primary">Start New Chat</a>
+              <a routerLink="/documents" class="btn btn-secondary">Upload Document</a>
+              <a routerLink="/conversations" class="btn btn-outline-primary">View All Conversations</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

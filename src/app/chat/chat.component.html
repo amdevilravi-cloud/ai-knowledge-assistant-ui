@@ -20,17 +20,37 @@
         }"
       >
         <strong>{{ msg.sender === 'user' ? 'You' : 'Assistant' }}:</strong>
-        <p class="mt-2">{{ msg.content }}</p>
+        <div class="mt-2" *ngIf="msg.sender === 'user'">{{ msg.content }}</div>
+        <div class="mt-2 markdown-content" *ngIf="msg.sender === 'assistant'" [innerHTML]="parseMarkdown(msg.content)"></div>
         <div
           *ngIf="msg.citations && msg.citations.length > 0"
           class="citations mt-2 pt-2 border-top"
         >
           <small class="text-muted d-block mb-1">Sources:</small>
-          <div *ngFor="let citation of msg.citations" class="citation-item">
-            <small>
-              <strong>{{ citation.documentName }}</strong>
-              <span *ngIf="citation.pageNumber"> (page {{ citation.pageNumber }})</span>
-            </small>
+          <div *ngFor="let citation of msg.citations; let i = index" class="citation-item">
+            <div 
+              class="citation-header cursor-pointer"
+              (click)="toggleCitation(getCitationId(citation, i))"
+            >
+              <small>
+                <strong>{{ citation.documentName }}</strong>
+                <span *ngIf="citation.pageNumber"> (page {{ citation.pageNumber }})</span>
+                <span *ngIf="citation.relevanceScore" class="text-muted ms-2">
+                  ({{ (citation.relevanceScore * 100).toFixed(1) }}% relevance)
+                </span>
+                <span class="ms-2">
+                  <i class="bi" [class.bi-chevron-down]="!isCitationExpanded(getCitationId(citation, i))" 
+                               [class.bi-chevron-up]="isCitationExpanded(getCitationId(citation, i))"></i>
+                </span>
+              </small>
+            </div>
+            <div *ngIf="isCitationExpanded(getCitationId(citation, i))" class="citation-content mt-2 p-2 bg-light rounded">
+              <small class="text-muted d-block mb-1">Content:</small>
+              <p class="mb-0 small">{{ citation.content }}</p>
+              <small *ngIf="citation.chunkIndex !== undefined" class="text-muted d-block mt-1">
+                Chunk index: {{ citation.chunkIndex }}
+              </small>
+            </div>
           </div>
         </div>
       </div>
