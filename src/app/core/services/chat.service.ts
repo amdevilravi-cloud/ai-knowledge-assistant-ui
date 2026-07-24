@@ -148,4 +148,24 @@ export class ChatService {
       };
     });
   }
+
+  /**
+   * Regenerate the last response in a conversation
+   */
+  regenerateResponse(conversationId: string): Observable<ChatResponse> {
+    return this.http.post<ChatResponse>(
+      `${this.chatApiUrl}/conversations/${conversationId}/regenerate`,
+      {}
+    );
+  }
+
+  /**
+   * Generate follow-up questions based on conversation context
+   */
+  generateFollowUpQuestions(conversationId: string): Observable<string[]> {
+    return this.http.post<string[]>(
+      `${this.chatApiUrl}/conversations/${conversationId}/follow-up`,
+      {}
+    );
+  }
 }
