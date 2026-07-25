@@ -16,6 +16,11 @@ export class ConversationsComponent implements OnInit {
   searchQuery: string = '';
   loading = false;
   error: string | null = null;
+  
+  // Edit state
+  showEditModal = false;
+  editingConversation: Conversation | null = null;
+  editTitle = '';
 
   constructor(
     private chatService: ChatService,
@@ -59,6 +64,91 @@ export class ConversationsComponent implements OnInit {
         this.error = 'Failed to search conversations';
         this.loading = false;
         console.error('Error searching conversations:', err);
+      }
+    });
+  }
+
+  openEditModal(conversation: Conversation): void {
+    this.editingConversation = conversation;
+    this.editTitle = conversation.title;
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.editingConversation = null;
+    this.editTitle = '';
+  }
+
+  saveTitle(): void {
+    if (!this.editingConversation || !this.editTitle.trim()) return;
+    
+    this.chatService.renameConversation(this.editingConversation.id, this.editTitle).subscribe({
+      next: () => {
+        this.editingConversation!.title = this.editTitle;
+        this.closeEditModal();
+        this.loadConversations();
+      },
+      error: (err) => {
+        this.error = 'Failed to rename conversation';
+        console.error('Error renaming conversation:', err);
+      }
+    });
+  }
+
+  exportConversation(conversationId: string, format: 'json' | 'markdown'): void {
+    this.chatService.exportConversation(conversationId, format).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `conversation-${conversationId}.${format === 'json' ? 'json' : 'md'}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.error = 'Failed to export conversation';
+        console.error('Error exporting conversation:', err);
+      }
+    });
+  }
+
+  duplicateConversation(conversationId: string): void {
+    this.chatService.duplicateConversation(conversationId).subscribe({
+      next: () => {
+        this.loadConversations();
+      },
+      error: (err) => {
+        this.error = 'Failed to duplicate conversation';
+        console.error('Error duplicating conversation:', err);
+      }
+    });
+  }
+
+  archiveConversation(conversationId: string): void {
+    if (!confirm('Are you sure you want to archive this conversation?')) return;
+    
+    this.chatService.archiveConversation(conversationId).subscribe({
+      next: () => {
+        this.loadConversations();
+      },
+      error: (err) => {
+        this.error = 'Failed to archive conversation';
+        console.error('Error archiving conversation:', err);
+      }
+    });
+  }
+
+  pinConversation(conversationId: string): void {
+    this.chatService.pinConversation(conversationId).subscribe({
+      next: () => {
+        this.loadConversations();
+      },
+      error: (err) => {
+        this.error = 'Failed to pin conversation';
+        console.error('Error pinning conversation:', err);
       }
     });
   }

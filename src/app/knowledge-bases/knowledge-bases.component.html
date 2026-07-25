@@ -1,0 +1,93 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Knowledge Bases</h2>
+    <button class="btn btn-primary" (click)="openCreateForm()" [disabled]="isLoading">
+      <i class="bi bi-plus-lg me-2"></i>Create Knowledge Base
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Create Form -->
+  <div *ngIf="showCreateForm" class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Create New Knowledge Base</h5>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="createKnowledgeBase()">
+        <div class="mb-3">
+          <label for="kbName" class="form-label">Name *</label>
+          <input type="text" class="form-control" id="kbName" [(ngModel)]="formData.name" name="name" required>
+        </div>
+        <div class="mb-3">
+          <label for="kbDescription" class="form-label">Description</label>
+          <textarea class="form-control" id="kbDescription" [(ngModel)]="formData.description" name="description" rows="3"></textarea>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary me-2" [disabled]="isLoading">Create</button>
+          <button type="button" class="btn btn-secondary" (click)="closeForms()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Form -->
+  <div *ngIf="showEditForm" class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Edit Knowledge Base</h5>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="updateKnowledgeBase()">
+        <div class="mb-3">
+          <label for="editKbName" class="form-label">Name *</label>
+          <input type="text" class="form-control" id="editKbName" [(ngModel)]="formData.name" name="name" required>
+        </div>
+        <div class="mb-3">
+          <label for="editKbDescription" class="form-label">Description</label>
+          <textarea class="form-control" id="editKbDescription" [(ngModel)]="formData.description" name="description" rows="3"></textarea>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary me-2" [disabled]="isLoading">Update</button>
+          <button type="button" class="btn btn-secondary" (click)="closeForms()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Knowledge Bases List -->
+  <div *ngIf="isLoading && !showCreateForm && !showEditForm" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && knowledgeBases.length === 0" class="alert alert-info">
+    No knowledge bases found. Create your first knowledge base to get started.
+  </div>
+
+  <div class="row" *ngIf="!isLoading && knowledgeBases.length > 0">
+    <div class="col-md-6 col-lg-4 mb-4" *ngFor="let kb of knowledgeBases">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ kb.name }}</h5>
+          <p class="card-text text-muted">{{ kb.description || 'No description' }}</p>
+          <div class="small text-muted mb-3">
+            <div>Created: {{ formatDate(kb.createdAt) }}</div>
+            <div>Updated: {{ formatDate(kb.updatedAt) }}</div>
+          </div>
+        </div>
+        <div class="card-footer bg-white border-top-0">
+          <button class="btn btn-sm btn-outline-primary me-2" (click)="openEditForm(kb)">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button class="btn btn-sm btn-outline-danger" (click)="deleteKnowledgeBase(kb.id)">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

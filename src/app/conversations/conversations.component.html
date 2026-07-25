@@ -22,8 +22,9 @@
     </div>
   </div>
 
-  <div *ngIf="error" class="alert alert-danger">
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
     {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
   </div>
 
   <div *ngIf="!loading && filteredConversations.length === 0" class="alert alert-info">
@@ -61,20 +62,66 @@
                   <td>{{ conv.lastActivity ? formatDate(conv.lastActivity) : 'N/A' }}</td>
                   <td>{{ conv.messageCount }}</td>
                   <td>
-                    <button 
-                      class="btn btn-sm btn-outline-primary me-2" 
-                      (click)="openConversation(conv.id)"
-                      title="Open conversation"
-                    >
-                      Open
-                    </button>
-                    <button 
-                      class="btn btn-sm btn-outline-danger" 
-                      (click)="deleteConversation(conv.id)"
-                      title="Delete conversation"
-                    >
-                      Delete
-                    </button>
+                    <div class="btn-group" role="group">
+                      <button 
+                        class="btn btn-sm btn-outline-primary" 
+                        (click)="openConversation(conv.id)"
+                        title="Open conversation"
+                      >
+                        <i class="bi bi-chat"></i>
+                      </button>
+                      <button 
+                        class="btn btn-sm btn-outline-secondary" 
+                        (click)="openEditModal(conv)"
+                        title="Rename conversation"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <div class="btn-group" role="group">
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                          data-bs-toggle="dropdown" 
+                          aria-expanded="false"
+                          title="More options"
+                        >
+                          <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li>
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="exportConversation(conv.id, 'json')">
+                              <i class="bi bi-file-earmark-code me-2"></i>Export as JSON
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="exportConversation(conv.id, 'markdown')">
+                              <i class="bi bi-file-earmark-text me-2"></i>Export as Markdown
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="duplicateConversation(conv.id)">
+                              <i class="bi bi-copy me-2"></i>Duplicate
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="archiveConversation(conv.id)">
+                              <i class="bi bi-archive me-2"></i>Archive
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="pinConversation(conv.id)">
+                              <i class="bi bi-pin me-2"></i>Pin
+                            </a>
+                          </li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li>
+                            <a class="dropdown-item text-danger" href="javascript:void(0)" (click)="deleteConversation(conv.id)">
+                              <i class="bi bi-trash me-2"></i>Delete
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -84,4 +131,27 @@
       </div>
     </div>
   </div>
+
+  <!-- Edit Title Modal -->
+  <div class="modal fade" [class.show]="showEditModal" [style.display]="showEditModal ? 'block' : 'none'" tabindex="-1" *ngIf="showEditModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Rename Conversation</h5>
+          <button type="button" class="btn-close" (click)="closeEditModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editTitleInput" class="form-label">New Title</label>
+            <input type="text" class="form-control" id="editTitleInput" [(ngModel)]="editTitle">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="saveTitle()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showEditModal" *ngIf="showEditModal"></div>
 </div>

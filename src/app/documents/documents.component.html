@@ -1,6 +1,32 @@
 <div class="container-fluid p-4">
   <h2 class="mb-4">Knowledge Base Documents</h2>
 
+  <!-- Knowledge Base and Collection Selector -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label for="kbSelect" class="form-label small text-muted mb-1">Knowledge Base:</label>
+          <select class="form-select form-select-sm" id="kbSelect" [(ngModel)]="selectedKnowledgeBaseId" (change)="onKnowledgeBaseChange($event)">
+            <option value="">All Knowledge Bases</option>
+            <option *ngFor="let kb of knowledgeBases" [value]="kb.id">{{ kb.name }}</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="collectionSelect" class="form-label small text-muted mb-1">Collection:</label>
+          <select class="form-select form-select-sm" id="collectionSelect" [(ngModel)]="selectedCollectionId" (change)="onCollectionChange($event)" [disabled]="!selectedKnowledgeBaseId">
+            <option value="">All Collections</option>
+            <option *ngFor="let collection of collections" [value]="collection.id">{{ collection.name }}</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="searchInput" class="form-label small text-muted mb-1">Search:</label>
+          <input type="text" class="form-control form-control-sm" id="searchInput" [(ngModel)]="searchQuery" placeholder="Search documents...">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card mb-4">
     <div class="card-body">
       <div class="input-group">
@@ -46,7 +72,7 @@
           <th>Pages</th>
           <th>Chunks</th>
           <th>Uploaded</th>
-          <th>Action</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -57,6 +83,13 @@
           <td>{{ doc.chunks || '-' }}</td>
           <td>{{ doc.uploadedAt | date: 'short' }}</td>
           <td>
+            <button
+              class="btn btn-sm btn-outline-primary me-2"
+              (click)="loadVersionHistory(doc.documentId, doc.documentName)"
+              title="View Version History"
+            >
+              <i class="bi bi-clock-history"></i>
+            </button>
             <button
               class="btn btn-sm btn-danger"
               (click)="deleteDocument(doc.documentId)"
@@ -71,4 +104,62 @@
       <p>No documents uploaded yet. Upload a PDF, TXT, or DOCX file to get started.</p>
     </div>
   </div>
+
+  <!-- Version History Modal -->
+  <div class="modal fade" [class.show]="showVersionHistory" [style.display]="showVersionHistory ? 'block' : 'none'" tabindex="-1" *ngIf="showVersionHistory">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Version History: {{ selectedDocumentName }}</h5>
+          <button type="button" class="btn-close" (click)="closeVersionHistory()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Chunk Count</th>
+                  <th>Embedding Model</th>
+                  <th>Created</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let version of selectedDocumentVersions">
+                  <td>v{{ version.versionNumber }}</td>
+                  <td>{{ version.chunkCount }}</td>
+                  <td>{{ version.embeddingModel }}</td>
+                  <td>{{ version.createdAt | date: 'short' }}</td>
+                  <td>
+                    <span class="badge" [class.bg-success]="version.isActive" [class.bg-secondary]="!version.isActive">
+                      {{ version.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="restoreVersion(version.id)"
+                      [disabled]="version.isActive"
+                      *ngIf="!version.isActive"
+                    >
+                      Restore
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="selectedDocumentVersions.length === 0" class="text-center p-4 text-muted">
+              No version history available.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeVersionHistory()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showVersionHistory" *ngIf="showVersionHistory"></div>
 </div>

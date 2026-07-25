@@ -2,7 +2,31 @@ import { Component, OnInit, inject, ViewChild, ElementRef } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DocumentService, DocumentUploadResponse } from '../core/services/document.service';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
+interface KnowledgeBase {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Collection {
+  id: string;
+  knowledgeBaseId: string;
+  name: string;
+  description: string;
+}
+
+interface DocumentVersion {
+  id: string;
+  documentId: string;
+  versionNumber: number;
+  chunkCount: number;
+  embeddingModel: string;
+  createdAt: string;
+  isActive: boolean;
+}
 
 @Component({
   selector: 'app-documents',
@@ -13,6 +37,7 @@ import { Observable } from 'rxjs';
 })
 export class DocumentsComponent implements OnInit {
   private documentService = inject(DocumentService);
+  private http = inject(HttpClient);
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   documents$!: Observable<DocumentUploadResponse[]>;
@@ -21,13 +46,107 @@ export class DocumentsComponent implements OnInit {
   validationError = '';
   uploadError = '';
   uploadSuccess = '';
+  
+  // Knowledge base and collection selection
+  knowledgeBases: KnowledgeBase[] = [];
+  collections: Collection[] = [];
+  selectedKnowledgeBaseId: string | null = null;
+  selectedCollectionId: string | null = null;
+  
+  // Search and filter
+  searchQuery = '';
+  
+  // Version history
+  showVersionHistory = false;
+  selectedDocumentVersions: DocumentVersion[] = [];
+  selectedDocumentName = '';
 
   ngOnInit(): void {
     this.loadDocuments();
+    this.loadKnowledgeBases();
   }
 
   loadDocuments(): void {
     this.documents$ = this.documentService.getDocuments();
+  }
+
+  loadKnowledgeBases(): void {
+    this.http.get<KnowledgeBase[]>('/api/knowledge-bases')
+      .subscribe({
+        next: (data) => {
+          this.knowledgeBases = data;
+        },
+        error: (err) => {
+          console.error('Error loading knowledge bases:', err);
+        }
+      });
+  }
+
+  loadCollections(kbId: string): void {
+    this.http.get<Collection[]>(`/api/knowledge-bases/${kbId}/collections`)
+      .subscribe({
+        next: (data) => {
+          this.collections = data;
+        },
+        error: (err) => {
+          console.error('Error loading collections:', err);
+        }
+      });
+  }
+
+  onKnowledgeBaseChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const kbId = select.value;
+    this.selectedKnowledgeBaseId = kbId || null;
+    this.selectedCollectionId = null;
+    this.collections = [];
+    if (kbId) {
+      this.loadCollections(kbId);
+    }
+  }
+
+  onCollectionChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const collectionId = select.value;
+    this.selectedCollectionId = collectionId || null;
+  }
+
+  loadVersionHistory(documentId: string, documentName: string): void {
+    this.http.get<DocumentVersion[]>(`/api/documents/${documentId}/versions`)
+      .subscribe({
+        next: (data) => {
+          this.selectedDocumentVersions = data;
+          this.selectedDocumentName = documentName;
+          this.showVersionHistory = true;
+        },
+        error: (err) => {
+          console.error('Error loading version history:', err);
+          this.uploadError = 'Failed to load version history';
+        }
+      });
+  }
+
+  closeVersionHistory(): void {
+    this.showVersionHistory = false;
+    this.selectedDocumentVersions = [];
+    this.selectedDocumentName = '';
+  }
+
+  restoreVersion(versionId: string): void {
+    if (!confirm('Are you sure you want to restore this version? This will set it as the active version.')) return;
+    
+    this.http.post(`/api/documents/versions/${versionId}/restore`, {})
+      .subscribe({
+        next: () => {
+          this.loadDocuments();
+          this.closeVersionHistory();
+          this.uploadSuccess = 'Version restored successfully';
+        },
+        error: (err) => {
+          console.error('Error restoring version:', err);
+          this.uploadError = 'Failed to restore version';
+        }
+      });
   }
 
   onFileSelected(event: Event): void {

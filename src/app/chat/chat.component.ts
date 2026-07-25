@@ -5,6 +5,20 @@ import { ChatService, Message, ChatResponse } from '../core/services/chat.servic
 import { DomSanitizer } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { HttpClient } from '@angular/common/http';
+
+interface KnowledgeBase {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Collection {
+  id: string;
+  knowledgeBaseId: string;
+  name: string;
+  description: string;
+}
 
 @Component({
   selector: 'app-chat',
@@ -17,6 +31,7 @@ export class ChatComponent implements OnInit {
   private chatService = inject(ChatService);
   private sanitizer = inject(DomSanitizer);
   private clipboard = inject(Clipboard);
+  private http = inject(HttpClient);
 
   messages: Message[] = [];
   newMessage = '';
@@ -27,9 +42,57 @@ export class ChatComponent implements OnInit {
   expandedCitations: Set<string> = new Set();
   followUpQuestions: string[] = [];
   showFollowUp = false;
+  
+  // Knowledge base and collection selection
+  knowledgeBases: KnowledgeBase[] = [];
+  collections: Collection[] = [];
+  selectedKnowledgeBaseId: string | null = null;
+  selectedCollectionId: string | null = null;
 
   ngOnInit(): void {
     this.startNewConversation();
+    this.loadKnowledgeBases();
+  }
+
+  loadKnowledgeBases(): void {
+    this.http.get<KnowledgeBase[]>('/api/knowledge-bases')
+      .subscribe({
+        next: (data) => {
+          this.knowledgeBases = data;
+        },
+        error: (err) => {
+          console.error('Error loading knowledge bases:', err);
+        }
+      });
+  }
+
+  loadCollections(kbId: string): void {
+    this.http.get<Collection[]>(`/api/knowledge-bases/${kbId}/collections`)
+      .subscribe({
+        next: (data) => {
+          this.collections = data;
+        },
+        error: (err) => {
+          console.error('Error loading collections:', err);
+        }
+      });
+  }
+
+  onKnowledgeBaseChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const kbId = select.value;
+    this.selectedKnowledgeBaseId = kbId || null;
+    this.selectedCollectionId = null;
+    this.collections = [];
+    if (kbId) {
+      this.loadCollections(kbId);
+    }
+  }
+
+  onCollectionChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const collectionId = select.value;
+    this.selectedCollectionId = collectionId || null;
   }
 
   startNewConversation(): void {

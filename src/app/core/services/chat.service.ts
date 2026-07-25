@@ -168,4 +168,57 @@ export class ChatService {
       {}
     );
   }
+
+  /**
+   * Rename a conversation
+   */
+  renameConversation(conversationId: string, newTitle: string): Observable<void> {
+    return this.http.put<void>(
+      `${this.chatApiUrl}/conversations/${conversationId}/rename`,
+      { title: newTitle }
+    );
+  }
+
+  /**
+   * Export a conversation
+   */
+  exportConversation(conversationId: string, format: 'json' | 'markdown'): Observable<Blob> {
+    return this.http.get(
+      `${this.chatApiUrl}/conversations/${conversationId}/export`,
+      { 
+        params: { format },
+        responseType: 'blob'
+      }
+    );
+  }
+
+  /**
+   * Duplicate a conversation
+   */
+  duplicateConversation(conversationId: string): Observable<Conversation> {
+    return this.http.post<Conversation>(
+      `${this.chatApiUrl}/conversations/${conversationId}/duplicate`,
+      {}
+    );
+  }
+
+  /**
+   * Archive a conversation
+   */
+  archiveConversation(conversationId: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.chatApiUrl}/conversations/${conversationId}/archive`,
+      {}
+    );
+  }
+
+  /**
+   * Pin a conversation
+   */
+  pinConversation(conversationId: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.chatApiUrl}/conversations/${conversationId}/pin`,
+      {}
+    );
+  }
 }

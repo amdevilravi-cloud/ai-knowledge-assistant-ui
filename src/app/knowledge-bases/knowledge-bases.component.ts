@@ -1,0 +1,135 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+
+interface KnowledgeBase {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+@Component({
+  selector: 'app-knowledge-bases',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './knowledge-bases.component.html',
+  styleUrls: ['./knowledge-bases.component.css']
+})
+export class KnowledgeBasesComponent implements OnInit {
+  knowledgeBases: KnowledgeBase[] = [];
+  isLoading = false;
+  error: string | null = null;
+  
+  // Form state
+  showCreateForm = false;
+  showEditForm = false;
+  editingKnowledgeBase: KnowledgeBase | null = null;
+  
+  formData = {
+    name: '',
+    description: ''
+  };
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.loadKnowledgeBases();
+  }
+
+  loadKnowledgeBases(): void {
+    this.isLoading = true;
+    this.error = null;
+    this.http.get<KnowledgeBase[]>('/api/knowledge-bases')
+      .subscribe({
+        next: (data) => {
+          this.knowledgeBases = data;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to load knowledge bases';
+          this.isLoading = false;
+          console.error('Error loading knowledge bases:', err);
+        }
+      });
+  }
+
+  openCreateForm(): void {
+    this.showCreateForm = true;
+    this.showEditForm = false;
+    this.formData = { name: '', description: '' };
+  }
+
+  openEditForm(kb: KnowledgeBase): void {
+    this.showEditForm = true;
+    this.showCreateForm = false;
+    this.editingKnowledgeBase = kb;
+    this.formData = { name: kb.name, description: kb.description || '' };
+  }
+
+  closeForms(): void {
+    this.showCreateForm = false;
+    this.showEditForm = false;
+    this.editingKnowledgeBase = null;
+    this.formData = { name: '', description: '' };
+  }
+
+  createKnowledgeBase(): void {
+    if (!this.formData.name.trim()) return;
+    
+    this.isLoading = true;
+    this.http.post<KnowledgeBase>('/api/knowledge-bases', this.formData)
+      .subscribe({
+        next: () => {
+          this.loadKnowledgeBases();
+          this.closeForms();
+        },
+        error: (err) => {
+          this.error = 'Failed to create knowledge base';
+          this.isLoading = false;
+          console.error('Error creating knowledge base:', err);
+        }
+      });
+  }
+
+  updateKnowledgeBase(): void {
+    if (!this.editingKnowledgeBase || !this.formData.name.trim()) return;
+    
+    this.isLoading = true;
+    this.http.put(`/api/knowledge-bases/${this.editingKnowledgeBase.id}`, this.formData)
+      .subscribe({
+        next: () => {
+          this.loadKnowledgeBases();
+          this.closeForms();
+        },
+        error: (err) => {
+          this.error = 'Failed to update knowledge base';
+          this.isLoading = false;
+          console.error('Error updating knowledge base:', err);
+        }
+      });
+  }
+
+  deleteKnowledgeBase(id: string): void {
+    if (!confirm('Are you sure you want to delete this knowledge base? All collections within it will also be deleted.')) return;
+    
+    this.isLoading = true;
+    this.http.delete(`/api/knowledge-bases/${id}`)
+      .subscribe({
+        next: () => {
+          this.loadKnowledgeBases();
+        },
+        error: (err) => {
+          this.error = 'Failed to delete knowledge base';
+          this.isLoading = false;
+          console.error('Error deleting knowledge base:', err);
+        }
+      });
+  }
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleString();
+  }
+}

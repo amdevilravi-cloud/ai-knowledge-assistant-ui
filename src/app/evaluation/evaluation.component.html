@@ -1,0 +1,261 @@
+<div class="container-fluid py-4">
+  <h2 class="mb-4">Evaluation Framework</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'tests'" (click)="activeTab = 'tests'">
+        Test Dataset
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'runs'" (click)="activeTab = 'runs'">
+        Evaluation Runs
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'results'" (click)="activeTab = 'results'" [disabled]="!selectedRunId">
+        Results
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tests Tab -->
+  <div *ngIf="activeTab === 'tests'">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Test Questions</h5>
+      <button class="btn btn-primary" (click)="openCreateTestForm()" [disabled]="isLoading">
+        <i class="bi bi-plus-lg me-2"></i>Add Test
+      </button>
+    </div>
+
+    <!-- Create Test Form -->
+    <div *ngIf="showCreateTestForm" class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">Add New Test</h5>
+      </div>
+      <div class="card-body">
+        <form (ngSubmit)="createTest()">
+          <div class="mb-3">
+            <label for="testName" class="form-label">Test Name *</label>
+            <input type="text" class="form-control" id="testName" [(ngModel)]="testFormData.name" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="testQuery" class="form-label">Query *</label>
+            <textarea class="form-control" id="testQuery" [(ngModel)]="testFormData.query" name="query" rows="3" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="testChunkIds" class="form-label">Expected Chunk IDs (comma-separated)</label>
+            <textarea class="form-control" id="testChunkIds" [(ngModel)]="testFormData.expectedChunkIds" name="expectedChunkIds" rows="2" placeholder="chunk-id-1, chunk-id-2, ..."></textarea>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary me-2" [disabled]="isLoading">Create Test</button>
+            <button type="button" class="btn btn-secondary" (click)="closeTestForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tests List -->
+    <div *ngIf="isLoading && !showCreateTestForm" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading && tests.length === 0" class="alert alert-info">
+      No tests found. Add your first test to get started.
+    </div>
+
+    <div class="table-responsive" *ngIf="!isLoading && tests.length > 0">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Query</th>
+            <th>Expected Chunks</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let test of tests">
+            <td>{{ test.name }}</td>
+            <td class="text-truncate" style="max-width: 300px;">{{ test.query }}</td>
+            <td>{{ test.expectedChunkIds.length }}</td>
+            <td>{{ formatDate(test.createdAt) }}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteTest(test.id)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Runs Tab -->
+  <div *ngIf="activeTab === 'runs'">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Evaluation Runs</h5>
+      <button class="btn btn-primary" (click)="openCreateRunForm()" [disabled]="isLoading">
+        <i class="bi bi-play-circle me-2"></i>New Run
+      </button>
+    </div>
+
+    <!-- Create Run Form -->
+    <div *ngIf="showCreateRunForm" class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">Create New Evaluation Run</h5>
+      </div>
+      <div class="card-body">
+        <form (ngSubmit)="createRun()">
+          <div class="mb-3">
+            <label for="runName" class="form-label">Run Name *</label>
+            <input type="text" class="form-control" id="runName" [(ngModel)]="runFormData.name" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="runDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="runDescription" [(ngModel)]="runFormData.description" name="description" rows="3"></textarea>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary me-2" [disabled]="isLoading">Create & Run</button>
+            <button type="button" class="btn btn-secondary" (click)="closeRunForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Runs List -->
+    <div *ngIf="isLoading && !showCreateRunForm" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading && runs.length === 0" class="alert alert-info">
+      No evaluation runs found. Create your first run to evaluate the system.
+    </div>
+
+    <div class="table-responsive" *ngIf="!isLoading && runs.length > 0">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Started</th>
+            <th>Completed</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let run of runs">
+            <td>{{ run.name }}</td>
+            <td>{{ run.description || '-' }}</td>
+            <td>
+              <span class="badge" [class]="getStatusBadgeClass(run.status)">{{ run.status }}</span>
+            </td>
+            <td>{{ formatDate(run.startedAt) }}</td>
+            <td>{{ run.completedAt ? formatDate(run.completedAt) : '-' }}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary me-2" (click)="loadResults(run.id)" [disabled]="run.status !== 'COMPLETED'">
+                <i class="bi bi-eye"></i> View Results
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteRun(run.id)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Results Tab -->
+  <div *ngIf="activeTab === 'results' && selectedRunId">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Evaluation Results</h5>
+      <button class="btn btn-outline-primary" (click)="exportResults()">
+        <i class="bi bi-download me-2"></i>Export CSV
+      </button>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="row mb-4" *ngIf="results.length > 0">
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Average Recall@K</h6>
+            <h3 class="text-primary">{{ (calculateAverageMetric('recallAtK') * 100).toFixed(1) }}%</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Average Precision@K</h6>
+            <h3 class="text-success">{{ (calculateAverageMetric('precisionAtK') * 100).toFixed(1) }}%</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Average MRR</h6>
+            <h3 class="text-info">{{ calculateAverageMetric('mrr').toFixed(3) }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Avg Latency</h6>
+            <h3 class="text-warning">{{ calculateAverageMetric('latency').toFixed(0) }}ms</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading && results.length === 0" class="alert alert-info">
+      No results found for this run.
+    </div>
+
+    <div class="table-responsive" *ngIf="!isLoading && results.length > 0">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Test ID</th>
+            <th>Recall@K</th>
+            <th>Precision@K</th>
+            <th>MRR</th>
+            <th>Latency (ms)</th>
+            <th>Retrieved Chunks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let result of results">
+            <td><small>{{ result.testId.substring(0, 8) }}...</small></td>
+            <td>{{ getRecallAtK(result) }}%</td>
+            <td>{{ getPrecisionAtK(result) }}%</td>
+            <td>{{ getMRR(result) }}</td>
+            <td>{{ result.latencyMs }}</td>
+            <td>{{ result.retrievedChunkIds.length }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
