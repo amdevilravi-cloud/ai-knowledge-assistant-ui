@@ -6,14 +6,22 @@
 /e2e/test-output/
 /.angular/
 .angular/
+/test-results/
 
 # Node modules and dependency files
 /node_modules/
 /package-lock.json
 /yarn.lock
+/playwright-report
 
 # Environment files
 /.env
+*.webm
+*.png
+*.jpg
+*.jpeg
+*.gif
+
 
 # Angular CLI and build artefacts
 /.angular-cli.json

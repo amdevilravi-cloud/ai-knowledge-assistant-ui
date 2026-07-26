@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { KnowledgeBasesService, CreateKnowledgeBaseRequest, UpdateKnowledgeBaseRequest } from '../core/services/knowledge-bases.service';
 
 interface KnowledgeBase {
   id: string;
@@ -32,8 +32,7 @@ export class KnowledgeBasesComponent implements OnInit {
     name: '',
     description: ''
   };
-
-  constructor(private http: HttpClient) {}
+  private knowledgeBasesService = inject(KnowledgeBasesService);
 
   ngOnInit(): void {
     this.loadKnowledgeBases();
@@ -42,7 +41,7 @@ export class KnowledgeBasesComponent implements OnInit {
   loadKnowledgeBases(): void {
     this.isLoading = true;
     this.error = null;
-    this.http.get<KnowledgeBase[]>('/api/knowledge-bases')
+    this.knowledgeBasesService.getKnowledgeBases()
       .subscribe({
         next: (data) => {
           this.knowledgeBases = data;
@@ -80,7 +79,7 @@ export class KnowledgeBasesComponent implements OnInit {
     if (!this.formData.name.trim()) return;
     
     this.isLoading = true;
-    this.http.post<KnowledgeBase>('/api/knowledge-bases', this.formData)
+    this.knowledgeBasesService.createKnowledgeBase(this.formData)
       .subscribe({
         next: () => {
           this.loadKnowledgeBases();
@@ -98,7 +97,7 @@ export class KnowledgeBasesComponent implements OnInit {
     if (!this.editingKnowledgeBase || !this.formData.name.trim()) return;
     
     this.isLoading = true;
-    this.http.put(`/api/knowledge-bases/${this.editingKnowledgeBase.id}`, this.formData)
+    this.knowledgeBasesService.updateKnowledgeBase(this.editingKnowledgeBase.id, this.formData)
       .subscribe({
         next: () => {
           this.loadKnowledgeBases();
@@ -116,7 +115,7 @@ export class KnowledgeBasesComponent implements OnInit {
     if (!confirm('Are you sure you want to delete this knowledge base? All collections within it will also be deleted.')) return;
     
     this.isLoading = true;
-    this.http.delete(`/api/knowledge-bases/${id}`)
+    this.knowledgeBasesService.deleteKnowledgeBase(id)
       .subscribe({
         next: () => {
           this.loadKnowledgeBases();

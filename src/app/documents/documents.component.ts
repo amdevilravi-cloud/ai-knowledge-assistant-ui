@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { DocumentService, DocumentUploadResponse } from '../core/services/document.service';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CollectionsService } from '../core/services/collections.service';
+import { KnowledgeBasesService } from '../core/services/knowledge-bases.service';
 
 interface KnowledgeBase {
   id: string;
@@ -37,6 +39,8 @@ interface DocumentVersion {
 })
 export class DocumentsComponent implements OnInit {
   private documentService = inject(DocumentService);
+  private collectionsService = inject(CollectionsService);
+  private knowledgeBasesService = inject(KnowledgeBasesService);
   private http = inject(HttpClient);
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -71,7 +75,7 @@ export class DocumentsComponent implements OnInit {
   }
 
   loadKnowledgeBases(): void {
-    this.http.get<KnowledgeBase[]>('/api/knowledge-bases')
+    this.knowledgeBasesService.getKnowledgeBases()
       .subscribe({
         next: (data) => {
           this.knowledgeBases = data;
@@ -83,7 +87,7 @@ export class DocumentsComponent implements OnInit {
   }
 
   loadCollections(kbId: string): void {
-    this.http.get<Collection[]>(`/api/knowledge-bases/${kbId}/collections`)
+    this.collectionsService.getCollectionsByKnowledgeBase(kbId)
       .subscribe({
         next: (data) => {
           this.collections = data;

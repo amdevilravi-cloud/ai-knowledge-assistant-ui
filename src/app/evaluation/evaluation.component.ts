@@ -1,39 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-
-interface EvaluationTest {
-  id: string;
-  name: string;
-  query: string;
-  expectedChunkIds: string[];
-  createdAt: string;
-}
-
-interface EvaluationRun {
-  id: string;
-  name: string;
-  description: string;
-  startedAt: string;
-  completedAt: string | null;
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-}
-
-interface EvaluationResult {
-  id: string;
-  testId: string;
-  runId: string;
-  retrievedChunkIds: string[];
-  metrics: {
-    recallAtK?: number;
-    precisionAtK?: number;
-    mrr?: number;
-    latency?: number;
-  };
-  latencyMs: number;
-  createdAt: string;
-}
+import { EvaluationService, EvaluationTest, EvaluationRun, EvaluationResult, CreateTestRequest, CreateRunRequest } from '../core/services/evaluation.service';
 
 @Component({
   selector: 'app-evaluation',
@@ -68,7 +36,7 @@ export class EvaluationComponent implements OnInit {
     description: ''
   };
 
-  constructor(private http: HttpClient) {}
+  constructor(private evaluationService: EvaluationService) {}
 
   ngOnInit(): void {
     this.loadTests();
@@ -77,7 +45,7 @@ export class EvaluationComponent implements OnInit {
 
   loadTests(): void {
     this.isLoading = true;
-    this.http.get<EvaluationTest[]>('/api/evaluation/tests')
+    this.evaluationService.getTests()
       .subscribe({
         next: (data) => {
           this.tests = data;
@@ -92,7 +60,7 @@ export class EvaluationComponent implements OnInit {
   }
 
   loadRuns(): void {
-    this.http.get<EvaluationRun[]>('/api/evaluation/runs')
+    this.evaluationService.getRuns()
       .subscribe({
         next: (data) => {
           this.runs = data;
@@ -106,7 +74,7 @@ export class EvaluationComponent implements OnInit {
   loadResults(runId: string): void {
     this.selectedRunId = runId;
     this.isLoading = true;
-    this.http.get<EvaluationResult[]>(`/api/evaluation/runs/${runId}/results`)
+    this.evaluationService.getRunResults(runId)
       .subscribe({
         next: (data) => {
           this.results = data;
@@ -140,11 +108,13 @@ export class EvaluationComponent implements OnInit {
       .map(id => id.trim())
       .filter(id => id.length > 0);
     
-    this.http.post<EvaluationTest>('/api/evaluation/tests', {
+    const request: CreateTestRequest = {
       name: this.testFormData.name,
       query: this.testFormData.query,
       expectedChunkIds: chunkIds
-    })
+    };
+    
+    this.evaluationService.createTest(request)
       .subscribe({
         next: () => {
           this.loadTests();
@@ -162,7 +132,7 @@ export class EvaluationComponent implements OnInit {
     if (!confirm('Are you sure you want to delete this test?')) return;
     
     this.isLoading = true;
-    this.http.delete(`/api/evaluation/tests/${id}`)
+    this.evaluationService.deleteTest(id)
       .subscribe({
         next: () => {
           this.loadTests();
@@ -189,7 +159,12 @@ export class EvaluationComponent implements OnInit {
     if (!this.runFormData.name.trim()) return;
     
     this.isLoading = true;
-    this.http.post<EvaluationRun>('/api/evaluation/runs', this.runFormData)
+    const request: CreateRunRequest = {
+      name: this.runFormData.name,
+      description: this.runFormData.description
+    };
+    
+    this.evaluationService.createRun(request)
       .subscribe({
         next: (run) => {
           this.loadRuns();
@@ -206,7 +181,7 @@ export class EvaluationComponent implements OnInit {
 
   runEvaluation(runId: string): void {
     this.isLoading = true;
-    this.http.post(`/api/evaluation/runs/${runId}/execute`, {})
+    this.evaluationService.executeRun(runId)
       .subscribe({
         next: () => {
           this.loadRuns();
@@ -224,7 +199,7 @@ export class EvaluationComponent implements OnInit {
     if (!confirm('Are you sure you want to delete this run and all its results?')) return;
     
     this.isLoading = true;
-    this.http.delete(`/api/evaluation/runs/${id}`)
+    this.evaluationService.deleteRun(id)
       .subscribe({
         next: () => {
           this.loadRuns();
@@ -285,7 +260,7 @@ export class EvaluationComponent implements OnInit {
   exportResults(): void {
     if (!this.selectedRunId) return;
     
-    this.http.get(`/api/evaluation/runs/${this.selectedRunId}/export`, { responseType: 'blob' })
+    this.evaluationService.exportResults(this.selectedRunId )
       .subscribe({
         next: (blob) => {
           const url = window.URL.createObjectURL(blob);

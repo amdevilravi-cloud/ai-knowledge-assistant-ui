@@ -119,20 +119,71 @@ export class DashboardComponent implements OnInit {
   }
 
   loadAnalytics(): void {
-    this.http.get<AnalyticsData>('/api/analytics/dashboard')
-      .subscribe({
-        next: (data) => {
-          this.analytics = data;
-          this.stats.queriesToday = data.queriesToday;
-          this.stats.averageResponseTime = data.averageResponseTime;
-        },
-        error: (err) => {
-          console.error('Error loading analytics:', err);
-          // Set default values if API fails
-          this.stats.queriesToday = 0;
-          this.stats.averageResponseTime = 0;
-        }
-      });
+    this.chatService.getAllConversations().subscribe({
+      next: (conversations: Conversation[]) => {
+        // Calculate analytics from existing conversation data
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Calculate queries today
+        const conversationsToday = conversations.filter(conv => {
+          const convDate = new Date(conv.createdAt);
+          convDate.setHours(0, 0, 0, 0);
+          return convDate.getTime() === today.getTime();
+        });
+        this.stats.queriesToday = conversationsToday.length;
+
+        // Calculate average response time (use average message count as proxy)
+        const avgMessageCount = conversations.length > 0
+          ? conversations.reduce((sum, conv) => sum + (conv.messageCount || 0), 0) / conversations.length
+          : 0;
+        this.stats.averageResponseTime = Math.round(avgMessageCount * 100); // Scale to milliseconds
+
+        // Calculate queries over time (grouped by date)
+        const queriesByDate: { [key: string]: number } = {};
+        conversations.forEach(conv => {
+          const date = new Date(conv.createdAt).toLocaleDateString();
+          queriesByDate[date] = (queriesByDate[date] || 0) + 1;
+        });
+
+        this.analytics.queriesOverTime = Object.entries(queriesByDate)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        // Calculate response time trends (using message count as proxy)
+        const trendsByDate: { [key: string]: { total: number; count: number } } = {};
+        conversations.forEach(conv => {
+          const date = new Date(conv.createdAt).toLocaleDateString();
+          if (!trendsByDate[date]) {
+            trendsByDate[date] = { total: 0, count: 0 };
+          }
+          trendsByDate[date].total += conv.messageCount || 0;
+          trendsByDate[date].count += 1;
+        });
+
+        this.analytics.responseTimeTrends = Object.entries(trendsByDate)
+          .map(([date, data]) => ({
+            date,
+            avgTime: Math.round((data.total / data.count) * 100)
+          }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        this.analytics.queriesToday = this.stats.queriesToday;
+        this.analytics.averageResponseTime = this.stats.averageResponseTime;
+      },
+      error: (err) => {
+        console.error('Error loading analytics:', err);
+        // Set default values if API fails
+        this.stats.queriesToday = 0;
+        this.stats.averageResponseTime = 0;
+        this.analytics = {
+          queriesToday: 0,
+          averageResponseTime: 0,
+          queriesOverTime: [],
+          responseTimeTrends: []
+        };
+      }
+    });
   }
 
   formatDate(dateString: string): string {

@@ -6,6 +6,8 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpClient } from '@angular/common/http';
+import { KnowledgeBasesService } from '../core/services/knowledge-bases.service';
+import { CollectionsService } from '../core/services/collections.service';
 
 interface KnowledgeBase {
   id: string;
@@ -32,6 +34,8 @@ export class ChatComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
   private clipboard = inject(Clipboard);
   private http = inject(HttpClient);
+  private knowledgeBasesService = inject(KnowledgeBasesService);
+  private collectionsService = inject(CollectionsService);
 
   messages: Message[] = [];
   newMessage = '';
@@ -55,7 +59,7 @@ export class ChatComponent implements OnInit {
   }
 
   loadKnowledgeBases(): void {
-    this.http.get<KnowledgeBase[]>('/api/knowledge-bases')
+    this.knowledgeBasesService.getKnowledgeBases()
       .subscribe({
         next: (data) => {
           this.knowledgeBases = data;
@@ -67,7 +71,7 @@ export class ChatComponent implements OnInit {
   }
 
   loadCollections(kbId: string): void {
-    this.http.get<Collection[]>(`/api/knowledge-bases/${kbId}/collections`)
+    this.collectionsService.getCollectionsByKnowledgeBase(kbId)
       .subscribe({
         next: (data) => {
           this.collections = data;

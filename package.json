@@ -6,7 +6,12 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test e2e/tests/ui",
+    "test:e2e:api": "playwright test e2e/tests/api",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --ui"
   },
   "prettier": {
     "printWidth": 100,
@@ -29,13 +34,11 @@
     "@angular/forms": "^20.0.3",
     "@angular/platform-browser": "^20.0.3",
     "@angular/router": "^20.0.3",
-
     "bootstrap": "^5.3.8",
     "file-saver": "^2.0.5",
     "marked": "^15.0.0",
     "ngx-clipboard": "^16.0.0",
     "ngx-markdown": "^20.1.0",
-
     "rxjs": "~7.8.0",
     "tslib": "^2.8.1",
     "zone.js": "~0.15.1"
@@ -44,6 +47,8 @@
     "@angular-devkit/build-angular": "^20.0.3",
     "@angular/cli": "^20.0.3",
     "@angular/compiler-cli": "^20.0.3",
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^26.1.1",
     "typescript": "~5.9.2"
   }
 }

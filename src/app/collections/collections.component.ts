@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { KnowledgeBasesService } from '../core/services/knowledge-bases.service';
+import { CollectionsService, CreateCollectionRequest, UpdateCollectionRequest } from '../core/services/collections.service';
 
 interface KnowledgeBase {
   id: string;
@@ -45,7 +46,8 @@ export class CollectionsComponent implements OnInit {
   };
 
   constructor(
-    private http: HttpClient,
+    private knowledgeBasesService: KnowledgeBasesService,
+    private collectionsService: CollectionsService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -64,7 +66,7 @@ export class CollectionsComponent implements OnInit {
   }
 
   loadKnowledgeBases(): void {
-    this.http.get<KnowledgeBase[]>('/api/knowledge-bases')
+    this.knowledgeBasesService.getKnowledgeBases()
       .subscribe({
         next: (data) => {
           this.knowledgeBases = data;
@@ -78,7 +80,7 @@ export class CollectionsComponent implements OnInit {
   loadCollections(kbId: string): void {
     this.isLoading = true;
     this.error = null;
-    this.http.get<Collection[]>(`/api/knowledge-bases/${kbId}/collections`)
+    this.collectionsService.getCollectionsByKnowledgeBase(kbId)
       .subscribe({
         next: (data) => {
           this.collections = data;
@@ -140,7 +142,7 @@ export class CollectionsComponent implements OnInit {
     if (!this.formData.name.trim() || !this.formData.knowledgeBaseId) return;
     
     this.isLoading = true;
-    this.http.post<Collection>('/api/collections', this.formData)
+    this.collectionsService.createCollection(this.formData as CreateCollectionRequest)
       .subscribe({
         next: () => {
           this.loadCollections(this.formData.knowledgeBaseId);
@@ -158,7 +160,7 @@ export class CollectionsComponent implements OnInit {
     if (!this.editingCollection || !this.formData.name.trim()) return;
     
     this.isLoading = true;
-    this.http.put(`/api/collections/${this.editingCollection.id}`, this.formData)
+    this.collectionsService.updateCollection(this.editingCollection.id, this.formData as UpdateCollectionRequest)
       .subscribe({
         next: () => {
           this.loadCollections(this.editingCollection!.knowledgeBaseId);
@@ -176,7 +178,7 @@ export class CollectionsComponent implements OnInit {
     if (!confirm('Are you sure you want to delete this collection?')) return;
     
     this.isLoading = true;
-    this.http.delete(`/api/collections/${id}`)
+    this.collectionsService.deleteCollection(id)
       .subscribe({
         next: () => {
           if (this.selectedKnowledgeBaseId) {
