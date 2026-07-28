@@ -77,45 +77,44 @@
                       >
                         <i class="bi bi-pencil"></i>
                       </button>
-                      <div class="btn-group" role="group">
+                      <div class="dropdown position-relative" [ngClass]="{'show': activeDropdown === conv.id}">
                         <button 
                           type="button" 
                           class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                          data-bs-toggle="dropdown" 
-                          aria-expanded="false"
+                          (click)="toggleDropdown(conv.id)"
                           title="More options"
                         >
                           <i class="bi bi-three-dots"></i>
                         </button>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu" [ngClass]="{'show': activeDropdown === conv.id}">
                           <li>
-                            <a class="dropdown-item" href="javascript:void(0)" (click)="exportConversation(conv.id, 'json')">
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="exportConversation(conv.id, 'json'); closeDropdown()">
                               <i class="bi bi-file-earmark-code me-2"></i>Export as JSON
                             </a>
                           </li>
                           <li>
-                            <a class="dropdown-item" href="javascript:void(0)" (click)="exportConversation(conv.id, 'markdown')">
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="exportConversation(conv.id, 'markdown'); closeDropdown()">
                               <i class="bi bi-file-earmark-text me-2"></i>Export as Markdown
                             </a>
                           </li>
                           <li>
-                            <a class="dropdown-item" href="javascript:void(0)" (click)="duplicateConversation(conv.id)">
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="duplicateConversation(conv.id); closeDropdown()">
                               <i class="bi bi-copy me-2"></i>Duplicate
                             </a>
                           </li>
                           <li>
-                            <a class="dropdown-item" href="javascript:void(0)" (click)="archiveConversation(conv.id)">
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="archiveConversation(conv.id); closeDropdown()">
                               <i class="bi bi-archive me-2"></i>Archive
                             </a>
                           </li>
                           <li>
-                            <a class="dropdown-item" href="javascript:void(0)" (click)="pinConversation(conv.id)">
+                            <a class="dropdown-item" href="javascript:void(0)" (click)="pinConversation(conv.id); closeDropdown()">
                               <i class="bi bi-pin me-2"></i>Pin
                             </a>
                           </li>
                           <li><hr class="dropdown-divider"></li>
                           <li>
-                            <a class="dropdown-item text-danger" href="javascript:void(0)" (click)="deleteConversation(conv.id)">
+                            <a class="dropdown-item text-danger" href="javascript:void(0)" (click)="deleteConversation(conv.id); closeDropdown()">
                               <i class="bi bi-trash me-2"></i>Delete
                             </a>
                           </li>

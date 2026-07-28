@@ -45,7 +45,60 @@
         <i class="bi bi-graph-up me-2"></i> Evaluation
       </a>
     </li>
+    <li class="nav-item">
+      <a
+        routerLink="/conversations"
+        routerLinkActive="active"
+        class="nav-link d-flex align-items-center"
+      >
+        <i class="bi bi-clock-history me-2"></i> All Conversations
+      </a>
+    </li>
   </ul>
+  
+  <hr class="my-3" />
+  
+  <!-- Recent Conversations Section -->
+  <div class="px-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <small class="text-muted fw-bold">
+        <i class="bi bi-clock me-1"></i> Recent Conversations
+      </small>
+      <button 
+        class="btn btn-link btn-sm p-0 text-muted" 
+        (click)="toggleConversations()"
+        title="Toggle conversations"
+      >
+        <i class="bi" [ngClass]="showConversations ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+      </button>
+    </div>
+    
+    <div *ngIf="loading" class="text-center py-2">
+      <div class="spinner-border spinner-border-sm" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+    
+    <div *ngIf="!loading && showConversations">
+      <div *ngIf="recentConversations.length === 0" class="text-muted small py-2">
+        No recent conversations
+      </div>
+      <ul class="nav flex-column conversation-list" *ngIf="recentConversations.length > 0">
+        <li class="nav-item" *ngFor="let conv of recentConversations">
+          <a 
+            class="nav-link conversation-item d-flex align-items-center"
+            (click)="openConversation(conv.id)"
+            title="{{ conv.title }}"
+          >
+            <i class="bi bi-chat-left me-2 text-muted"></i>
+            <span class="conversation-title flex-grow-1">{{ conv.title }}</span>
+            <small class="text-muted ms-2">{{ formatDate(conv.lastActivity || conv.createdAt) }}</small>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  
   <hr class="my-3" />
   <div class="px-3 text-muted">
     <small>

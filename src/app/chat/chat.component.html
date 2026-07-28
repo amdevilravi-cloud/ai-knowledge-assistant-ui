@@ -1,9 +1,52 @@
 <div class="chat-container d-flex h-100 flex-column">
   <div class="chat-header p-3 border-bottom bg-light">
-    <h5 class="mb-0">Enterprise AI Chat Assistant</h5>
-    <small class="text-muted">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center flex-grow-1">
+        <button class="btn btn-link text-white me-2" (click)="toggleConversationHistory()" title="Conversation History">
+          <i class="bi bi-clock-history"></i>
+        </button>
+        <div class="flex-grow-1">
+          <h5 class="mb-0" *ngIf="!editingTitle">{{ conversationTitle }}</h5>
+          <input 
+            *ngIf="editingTitle"
+            class="form-control form-control-sm"
+            [(ngModel)]="conversationTitle"
+            (blur)="editingTitle = false; updateConversationTitle()"
+            (keyup.enter)="editingTitle = false; updateConversationTitle()"
+            (keyup.escape)="editingTitle = false"
+          />
+        </div>
+        <button class="btn btn-link text-white ms-2" (click)="editingTitle = true" *ngIf="!editingTitle" title="Edit Title">
+          <i class="bi bi-pencil"></i>
+        </button>
+      </div>
+      <button class="btn btn-link text-white" (click)="startNewConversation()" title="New Conversation">
+        <i class="bi bi-plus-lg"></i>
+      </button>
+    </div>
+    <small class="text-white">
       {{ isLoading ? 'Processing...' : 'Ready to chat' }}
     </small>
+  </div>
+
+  <!-- Conversation History Sidebar -->
+  <div *ngIf="showConversationHistory" class="conversation-history-sidebar p-3 border-end bg-white">
+    <h6 class="mb-3">Conversation History</h6>
+    <div *ngIf="conversations.length === 0" class="text-muted small">
+      No previous conversations
+    </div>
+    <div *ngFor="let conv of conversations" class="conversation-item p-2 mb-2 rounded cursor-pointer" 
+         (click)="loadConversation(conv.id)"
+         [class.active]="conversationId === conv.id">
+      <div class="d-flex justify-content-between align-items-center">
+        <strong class="small">{{ conv.title }}</strong>
+        <button class="btn btn-link text-danger p-0 ms-2" (click)="deleteConversation(conv.id, $event)" title="Delete">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+      <small class="text-muted d-block">{{ formatDate(conv.lastActivity) }}</small>
+      <small class="text-muted">{{ conv.messageCount }} messages</small>
+    </div>
   </div>
 
   <!-- Knowledge Base and Collection Selector -->

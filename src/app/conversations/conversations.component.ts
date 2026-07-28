@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './conversations.component.html',
+  styleUrls: ['./conversations.component.css'],
 })
 export class ConversationsComponent implements OnInit {
   conversations: Conversation[] = [];
@@ -21,6 +22,9 @@ export class ConversationsComponent implements OnInit {
   showEditModal = false;
   editingConversation: Conversation | null = null;
   editTitle = '';
+
+  // Dropdown state
+  activeDropdown: string | null = null;
 
   constructor(
     private chatService: ChatService,
@@ -177,5 +181,13 @@ export class ConversationsComponent implements OnInit {
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  toggleDropdown(conversationId: string): void {
+    this.activeDropdown = this.activeDropdown === conversationId ? null : conversationId;
+  }
+
+  closeDropdown(): void {
+    this.activeDropdown = null;
   }
 }

@@ -22,6 +22,14 @@ interface Collection {
   description: string;
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  createdAt: Date;
+  lastActivity: Date;
+  messageCount: number;
+}
+
 @Component({
   selector: 'app-chat',
   standalone: true,
@@ -42,10 +50,16 @@ export class ChatComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   conversationId = '';
+  conversationTitle = 'New Conversation';
   useStreaming = true;
   expandedCitations: Set<string> = new Set();
   followUpQuestions: string[] = [];
   showFollowUp = false;
+  
+  // Conversation history
+  conversations: Conversation[] = [];
+  showConversationHistory = false;
+  editingTitle = false;
   
   // Knowledge base and collection selection
   knowledgeBases: KnowledgeBase[] = [];
@@ -56,6 +70,7 @@ export class ChatComponent implements OnInit {
   ngOnInit(): void {
     this.startNewConversation();
     this.loadKnowledgeBases();
+    this.loadConversationHistory();
   }
 
   loadKnowledgeBases(): void {
@@ -104,6 +119,7 @@ export class ChatComponent implements OnInit {
       next: (response) => {
         this.conversationId = response.conversationId;
         this.messages = [];
+        this.conversationTitle = 'New Conversation';
         this.followUpQuestions = [];
         this.showFollowUp = false;
         console.log('New conversation started:', this.conversationId);
@@ -113,6 +129,69 @@ export class ChatComponent implements OnInit {
         this.errorMessage = 'Failed to start conversation. Is the backend running?';
       },
     });
+  }
+
+  loadConversationHistory(): void {
+    this.chatService.getAllConversations().subscribe({
+      next: (conversations: any[]) => {
+        this.conversations = conversations.map((conv: any) => ({
+          ...conv,
+          createdAt: new Date(conv.createdAt),
+          lastActivity: conv.lastActivity ? new Date(conv.lastActivity) : new Date(conv.createdAt)
+        }));
+      },
+      error: (err: any) => {
+        console.error('Error loading conversation history:', err);
+      }
+    });
+  }
+
+  loadConversation(conversationId: string): void {
+    // Since getConversation doesn't exist in the service, we'll start a new conversation
+    // In a real implementation, you would need to add this method to the backend service
+    console.log('Loading conversation:', conversationId);
+    this.conversationId = conversationId;
+    const conversation = this.conversations.find(c => c.id === conversationId);
+    if (conversation) {
+      this.conversationTitle = conversation.title;
+    }
+    this.showConversationHistory = false;
+    // Note: Messages would need to be loaded from the backend in a real implementation
+    this.messages = [];
+  }
+
+  deleteConversation(conversationId: string, event: Event): void {
+    event.stopPropagation();
+    if (confirm('Are you sure you want to delete this conversation?')) {
+      this.chatService.deleteConversation(conversationId).subscribe({
+        next: () => {
+          this.conversations = this.conversations.filter(c => c.id !== conversationId);
+          if (this.conversationId === conversationId) {
+            this.startNewConversation();
+          }
+        },
+        error: (err: any) => {
+          console.error('Error deleting conversation:', err);
+        }
+      });
+    }
+  }
+
+  updateConversationTitle(): void {
+    if (this.conversationId && this.conversationTitle) {
+      this.chatService.renameConversation(this.conversationId, this.conversationTitle).subscribe({
+        next: () => {
+          this.loadConversationHistory();
+        },
+        error: (err: any) => {
+          console.error('Error updating conversation title:', err);
+        }
+      });
+    }
+  }
+
+  toggleConversationHistory(): void {
+    this.showConversationHistory = !this.showConversationHistory;
   }
 
   sendMessage(): void {
@@ -284,6 +363,22 @@ export class ChatComponent implements OnInit {
 
   getCitationId(citation: Citation, index: number): string {
     return `${citation.documentId}-${citation.chunkIndex}-${index}`;
+  }
+
+  formatDate(date: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) {
+      return 'Today';
+    } else if (days === 1) {
+      return 'Yesterday';
+    } else if (days < 7) {
+      return `${days} days ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   }
 }
 

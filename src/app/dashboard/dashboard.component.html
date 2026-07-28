@@ -117,32 +117,32 @@
     </mat-card>
 
     <!-- Quick Actions -->
-    <mat-card class="mt-4">
+    <mat-card class="mt-4 quick-actions-card">
       <mat-card-header>
         <mat-card-title>Quick Actions</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <div class="quick-actions">
-          <a mat-raised-button color="primary" routerLink="/chat">
+          <button mat-raised-button color="primary" routerLink="/chat">
             <mat-icon>chat</mat-icon>
             Start New Chat
-          </a>
-          <a mat-raised-button color="accent" routerLink="/documents">
+          </button>
+          <button mat-raised-button color="accent" routerLink="/documents">
             <mat-icon>upload_file</mat-icon>
             Upload Document
-          </a>
-          <a mat-raised-button routerLink="/knowledge-bases">
+          </button>
+          <button mat-raised-button color="warn" routerLink="/knowledge-bases">
             <mat-icon>folder</mat-icon>
             Create Knowledge Base
-          </a>
-          <a mat-stroked-button routerLink="/evaluation">
+          </button>
+          <button mat-stroked-button routerLink="/evaluation">
             <mat-icon>assessment</mat-icon>
             Run Evaluation
-          </a>
-          <a mat-stroked-button routerLink="/conversations">
+          </button>
+          <button mat-stroked-button routerLink="/conversations">
             <mat-icon>history</mat-icon>
             View All Conversations
-          </a>
+          </button>
         </div>
       </mat-card-content>
     </mat-card>

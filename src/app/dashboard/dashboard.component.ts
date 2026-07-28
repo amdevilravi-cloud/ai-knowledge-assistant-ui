@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { DashboardService, DashboardStats, AnalyticsData } from '../core/services/dashboard.service';
 
 @Component({
@@ -43,10 +44,15 @@ export class DashboardComponent implements OnInit {
   displayedColumns: string[] = ['title', 'created', 'lastActivity', 'messages'];
 
   private dashboardService = inject(DashboardService);
+  private router = inject(Router);
 
   ngOnInit(): void {
     this.loadDashboardStats();
     this.loadAnalytics();
+  }
+
+  navigateTo(route: string): void {
+    this.router.navigate([route]);
   }
 
   loadDashboardStats(): void {
