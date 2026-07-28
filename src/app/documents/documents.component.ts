@@ -6,6 +6,18 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CollectionsService } from '../core/services/collections.service';
 import { KnowledgeBasesService } from '../core/services/knowledge-bases.service';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { AdvancedSearchComponent, AdvancedSearchParams } from '../shared/advanced-search/advanced-search.component';
 
 interface KnowledgeBase {
   id: string;
@@ -33,7 +45,22 @@ interface DocumentVersion {
 @Component({
   selector: 'app-documents',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatButtonModule,
+    MatInputModule,
+    MatSelectModule,
+    MatTableModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatDialogModule,
+    MatChipsModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    AdvancedSearchComponent
+  ],
   templateUrl: './documents.component.html',
   styleUrls: ['./documents.component.css'],
 })
@@ -64,6 +91,8 @@ export class DocumentsComponent implements OnInit {
   showVersionHistory = false;
   selectedDocumentVersions: DocumentVersion[] = [];
   selectedDocumentName = '';
+
+  displayedColumns: string[] = ['name', 'size', 'pages', 'chunks', 'uploaded', 'actions'];
 
   ngOnInit(): void {
     this.loadDocuments();
@@ -98,9 +127,8 @@ export class DocumentsComponent implements OnInit {
       });
   }
 
-  onKnowledgeBaseChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const kbId = select.value;
+  onKnowledgeBaseChange(event: any): void {
+    const kbId = event.value || event.target?.value;
     this.selectedKnowledgeBaseId = kbId || null;
     this.selectedCollectionId = null;
     this.collections = [];
@@ -109,10 +137,19 @@ export class DocumentsComponent implements OnInit {
     }
   }
 
-  onCollectionChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const collectionId = select.value;
+  onCollectionChange(event: any): void {
+    const collectionId = event.value || event.target?.value;
     this.selectedCollectionId = collectionId || null;
+  }
+
+  onAdvancedSearch(params: AdvancedSearchParams): void {
+    console.log('Advanced search params:', params);
+    // Apply advanced search filters
+    this.searchQuery = params.query;
+    
+    // Additional filtering logic can be implemented here
+    // For now, this will trigger a reload with the search query
+    this.loadDocuments();
   }
 
   loadVersionHistory(documentId: string, documentName: string): void {
