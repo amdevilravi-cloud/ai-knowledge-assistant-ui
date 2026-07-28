@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Document {
   id: string;
@@ -27,7 +28,7 @@ export interface DocumentUploadResponse {
   providedIn: 'root',
 })
 export class DocumentService {
-  private apiUrl = 'http://localhost:8080/api/documents';
+  private apiUrl = `${environment.apiUrl}/api/documents`;
   private maxFileSize = 50 * 1024 * 1024; // 50MB in bytes
   private allowedTypes = ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
   private allowedExtensions = ['.pdf', '.txt', '.docx'];

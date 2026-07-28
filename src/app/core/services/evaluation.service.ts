@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface EvaluationTest {
   id: string;
@@ -51,7 +52,7 @@ export interface EvaluationResult {
   providedIn: 'root',
 })
 export class EvaluationService {
-  private apiUrl = 'http://localhost:8080/api/evaluation';
+  private apiUrl = `${environment.apiUrl}/api/evaluation`;
 
   constructor(private http: HttpClient) {}
 

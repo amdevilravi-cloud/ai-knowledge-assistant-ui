@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface KnowledgeBase {
   id: string;
@@ -26,7 +27,7 @@ export interface UpdateKnowledgeBaseRequest {
   providedIn: 'root',
 })
 export class KnowledgeBasesService {
-  private apiUrl = 'http://localhost:8080/api/knowledge-bases';
+  private apiUrl = `${environment.apiUrl}/api/knowledge-bases`;
 
   constructor(private http: HttpClient) {}
 

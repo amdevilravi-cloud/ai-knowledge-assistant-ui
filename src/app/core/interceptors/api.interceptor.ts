@@ -16,7 +16,7 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
     catchError((error: HttpErrorResponse) => {
       console.error('API Error [' + error.status + ']:', error.message);
       if (error.status === 0) {
-        console.error('Connection failed. Ensure backend is running at http://localhost:8080');
+        console.error('Connection failed. Ensure backend is running');
       }
       return throwError(() => error);
     })

@@ -143,25 +143,31 @@ export class ChatComponent implements OnInit {
   }
 
   private sendStreamingMessage(userMessage: string): void {
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      content: '',
+      timestamp: new Date(),
+      sender: 'assistant'
+    };
+
+    this.messages.push(assistantMessage);
+
     this.chatService.streamChat(userMessage).subscribe({
-      next: (response: string) => {
-        // Add assistant response
-        this.messages.push({
-          id: (Date.now() + 1).toString(),
-          content: response,
-          timestamp: new Date(),
-          sender: 'assistant',
-        });
-        this.isLoading = false;
-        this.generateFollowUpQuestions();
+      next: (chunk: string) => {
+
+        if (chunk === 'Chat completed') {
+          this.isLoading = false;
+          this.generateFollowUpQuestions();
+          return;
+        }
+
+        assistantMessage.content += chunk + ' ';
       },
+
       error: (error) => {
-        console.error('Error in streaming message:', error);
+        console.error(error);
         this.isLoading = false;
-        this.errorMessage = 'Streaming failed. Falling back to regular chat.';
-        // Fallback to regular chat
-        this.sendRegularMessage(userMessage);
-      },
+      }
     });
   }
 

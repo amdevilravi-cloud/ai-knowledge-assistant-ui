@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface Message {
   id: string;
@@ -51,7 +52,7 @@ export interface Conversation {
   providedIn: 'root',
 })
 export class ChatService {
-  private chatApiUrl = 'http://localhost:8080/api/chat';
+  private chatApiUrl = `${environment.apiUrl}/api/chat`;
 
   constructor(private http: HttpClient) {}
 
@@ -126,23 +127,44 @@ export class ChatService {
       const eventSource = new EventSource(
         `${this.chatApiUrl}/stream?message=${encodeURIComponent(message)}`
       );
+      // Optional: Add timeout after 30s (client-side)
+      let timeout: any;
 
+      eventSource.addEventListener('message', (event) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          observer.error(new Error("Stream timed out"));
+          eventSource.close();
+        }, 30000);
+      }, false);
+
+      // Or just let server handle timeout — recommended
+
+
+      // Handle normal messages
       eventSource.addEventListener('message', (event: any) => {
-        observer.next(event.data);
-        eventSource.close();
-        observer.complete();
+        if (event.data === 'Chat completed') {
+          observer.next(event.data);
+          eventSource.close();
+          observer.complete();
+        } else {
+          observer.next(event.data);
+        }
       });
 
+      // Handle error from server (e.g., "Error: something went wrong")
       eventSource.addEventListener('error', (event: any) => {
-        observer.error(new Error(event.data));
+        observer.error(new Error(`SSE Error: ${event.data || 'Unknown error'}`));
         eventSource.close();
       });
 
-      eventSource.onerror = (error) => {
-        observer.error(error);
+      // Handle network-level errors (e.g., connection lost)
+      eventSource.onerror = (error: any) => {
+        observer.error(new Error(`Network error: ${error.message || 'Unknown'}`));
         eventSource.close();
       };
 
+      // Cleanup on unsubscription
       return () => {
         eventSource.close();
       };
