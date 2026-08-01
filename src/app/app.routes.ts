@@ -6,6 +6,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { KnowledgeBasesComponent } from './knowledge-bases/knowledge-bases.component';
 import { CollectionsComponent } from './collections/collections.component';
 import { EvaluationComponent } from './evaluation/evaluation.component';
+import { AgentPlatformComponent } from './agent-platform/agent-platform.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -36,6 +37,10 @@ export const routes: Routes = [
   {
     path: 'evaluation',
     component: EvaluationComponent,
+  },
+  {
+    path: 'agent-platform',
+    component: AgentPlatformComponent,
   },
   { path: '**', redirectTo: '/dashboard' },
 ];

@@ -65,7 +65,7 @@ export class DashboardService {
         return {
           totalConversations: conversations.length,
           totalDocuments: documents.length,
-          totalChunks: documents.reduce((sum, doc) => sum + (doc.chunks || 0), 0),
+          totalChunks: documents.reduce((sum, doc) => sum + (doc.chunkCount || 0), 0),
           totalKnowledgeBases: knowledgeBases.length,
           totalCollections: collections.length,
           queriesToday: conversationsToday.length,

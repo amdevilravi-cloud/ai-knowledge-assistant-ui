@@ -2,6 +2,11 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KnowledgeBasesService, CreateKnowledgeBaseRequest, UpdateKnowledgeBaseRequest } from '../core/services/knowledge-bases.service';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 interface KnowledgeBase {
   id: string;
@@ -14,7 +19,15 @@ interface KnowledgeBase {
 @Component({
   selector: 'app-knowledge-bases',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatButtonModule,
+    MatInputModule,
+    MatIconModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './knowledge-bases.component.html',
   styleUrls: ['./knowledge-bases.component.css']
 })

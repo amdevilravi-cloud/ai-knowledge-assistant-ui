@@ -1,8 +1,8 @@
 import { Component, OnInit, inject, ViewChild, ElementRef } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DocumentService, DocumentUploadResponse } from '../core/services/document.service';
-import { HttpClient } from '@angular/common/http';
+import { DocumentMetadata, DocumentService, DocumentUploadResponse, DocumentVersion } from '../core/services/document.service';
 import { Observable } from 'rxjs';
 import { CollectionsService } from '../core/services/collections.service';
 import { KnowledgeBasesService } from '../core/services/knowledge-bases.service';
@@ -32,15 +32,6 @@ interface Collection {
   description: string;
 }
 
-interface DocumentVersion {
-  id: string;
-  documentId: string;
-  versionNumber: number;
-  chunkCount: number;
-  embeddingModel: string;
-  createdAt: string;
-  isActive: boolean;
-}
 
 @Component({
   selector: 'app-documents',
@@ -68,10 +59,10 @@ export class DocumentsComponent implements OnInit {
   private documentService = inject(DocumentService);
   private collectionsService = inject(CollectionsService);
   private knowledgeBasesService = inject(KnowledgeBasesService);
-  private http = inject(HttpClient);
+  private dialog = inject(MatDialog);
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
-  documents$!: Observable<DocumentUploadResponse[]>;
+  documents$!: Observable<DocumentMetadata[]>;
   selectedFile: File | null = null;
   isUploading = false;
   validationError = '';
@@ -91,6 +82,10 @@ export class DocumentsComponent implements OnInit {
   showVersionHistory = false;
   selectedDocumentVersions: DocumentVersion[] = [];
   selectedDocumentName = '';
+
+  // Upload success modal
+  showUploadSuccess = false;
+  uploadSuccessData: { documentName: string; chunks: number; fileSize: number } | null = null;
 
   displayedColumns: string[] = ['name', 'size', 'pages', 'chunks', 'uploaded', 'actions'];
 
@@ -153,7 +148,7 @@ export class DocumentsComponent implements OnInit {
   }
 
   loadVersionHistory(documentId: string, documentName: string): void {
-    this.http.get<DocumentVersion[]>(`/api/documents/${documentId}/versions`)
+    this.documentService.getDocumentVersions(documentId)
       .subscribe({
         next: (data) => {
           this.selectedDocumentVersions = data;
@@ -173,10 +168,20 @@ export class DocumentsComponent implements OnInit {
     this.selectedDocumentName = '';
   }
 
+  openUploadSuccessModal(documentName: string, chunks: number, fileSize?: number): void {
+    this.uploadSuccessData = { documentName, chunks, fileSize: fileSize ?? 0 };
+    this.showUploadSuccess = true;
+  }
+
+  closeUploadSuccessModal(): void {
+    this.showUploadSuccess = false;
+    this.uploadSuccessData = null;
+  }
+
   restoreVersion(versionId: string): void {
     if (!confirm('Are you sure you want to restore this version? This will set it as the active version.')) return;
     
-    this.http.post(`/api/documents/versions/${versionId}/restore`, {})
+    this.documentService.restoreDocumentVersion(versionId)
       .subscribe({
         next: () => {
           this.loadDocuments();
@@ -223,10 +228,10 @@ export class DocumentsComponent implements OnInit {
         this.isUploading = false;
         this.selectedFile = null;
         this.validationError = '';
-        this.uploadSuccess = `✓ "${response.documentName}" uploaded successfully (${response.chunks} chunks)`;
         if (this.fileInput) {
           this.fileInput.nativeElement.value = '';
         }
+        this.openUploadSuccessModal(response.documentName, response.chunks || 0, response.fileSize);
         this.loadDocuments();
       },
       error: (error) => {

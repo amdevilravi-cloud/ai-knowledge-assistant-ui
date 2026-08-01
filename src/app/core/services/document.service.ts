@@ -24,6 +24,28 @@ export interface DocumentUploadResponse {
   uploadSuccess: boolean;
 }
 
+export interface DocumentMetadata {
+  documentId: string;
+  documentName: string;
+  documentHash: string;
+  chunkCount: number;
+  fileSize: number;
+  pages: number;
+  characters: number;
+  uploadedAt: Date;
+  indexedAt: Date;
+}
+
+export interface DocumentVersion {
+  id: string;
+  documentId: string;
+  versionNumber: number;
+  chunkCount: number;
+  embeddingModel: string;
+  createdAt: Date;
+  isActive: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -35,8 +57,8 @@ export class DocumentService {
 
   constructor(private http: HttpClient) {}
 
-  getDocuments(): Observable<DocumentUploadResponse[]> {
-    return this.http.get<DocumentUploadResponse[]>(this.apiUrl);
+  getDocuments(): Observable<DocumentMetadata[]> {
+    return this.http.get<DocumentMetadata[]>(this.apiUrl);
   }
 
   uploadDocument(file: File): Observable<DocumentUploadResponse> {
@@ -55,8 +77,20 @@ export class DocumentService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  getDocumentMetadata(id: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/${id}/metadata`);
+  getDocumentMetadata(id: string): Observable<DocumentMetadata> {
+    return this.http.get<DocumentMetadata>(`${this.apiUrl}/${id}/metadata`);
+  }
+
+  getDocumentVersion(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}/version`);
+  }
+
+  getDocumentVersions(documentId: string): Observable<DocumentVersion[]> {
+    return this.http.get<DocumentVersion[]>(`${this.apiUrl}/${documentId}/versions`);
+  }
+
+  restoreDocumentVersion(versionId: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/versions/${versionId}/restore`, {});
   }
 
   reindexDocument(id: string): Observable<any> {

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { EvaluationService, EvaluationTest, EvaluationRun, EvaluationResult, CreateTestRequest, CreateRunRequest } from '../core/services/evaluation.service';
+import { EvaluationService, EvaluationTest, EvaluationRun, EvaluationResult, CreateTestRequest, CreateRunRequest, CreateEnhancedTestRequest } from '../core/services/evaluation.service';
 
 @Component({
   selector: 'app-evaluation',
@@ -24,6 +24,9 @@ export class EvaluationComponent implements OnInit {
   // Form state
   showCreateTestForm = false;
   showCreateRunForm = false;
+  showEnhancedTestForm = false;
+  showGenerateTestsForm = false;
+  showLoadManualTestsForm = false;
   
   testFormData = {
     name: '',
@@ -31,16 +34,42 @@ export class EvaluationComponent implements OnInit {
     expectedChunkIds: ''
   };
   
+  enhancedTestFormData = {
+    name: '',
+    query: '',
+    expectedChunkIds: '',
+    category: '',
+    language: '',
+    difficulty: '',
+    documentScope: '',
+    expectedAnswer: '',
+    keyPoints: ''
+  };
+  
   runFormData = {
     name: '',
     description: ''
   };
+
+  generateTestsFormData = {
+    sampleSize: 10
+  };
+
+  loadManualTestsFormData = {
+    filePath: 'manual-evaluation-tests.json'
+  };
+
+  // Filtering
+  selectedCategory: string = '';
+  selectedLanguage: string = '';
+  testCount: number = 0;
 
   constructor(private evaluationService: EvaluationService) {}
 
   ngOnInit(): void {
     this.loadTests();
     this.loadRuns();
+    this.loadTestCount();
   }
 
   loadTests(): void {
@@ -55,6 +84,18 @@ export class EvaluationComponent implements OnInit {
           this.error = 'Failed to load evaluation tests';
           this.isLoading = false;
           console.error('Error loading tests:', err);
+        }
+      });
+  }
+
+  loadTestCount(): void {
+    this.evaluationService.getTestCount()
+      .subscribe({
+        next: (count) => {
+          this.testCount = count;
+        },
+        error: (err) => {
+          console.error('Error loading test count:', err);
         }
       });
   }
@@ -97,6 +138,77 @@ export class EvaluationComponent implements OnInit {
   closeTestForm(): void {
     this.showCreateTestForm = false;
     this.testFormData = { name: '', query: '', expectedChunkIds: '' };
+  }
+
+  openEnhancedTestForm(): void {
+    this.showEnhancedTestForm = true;
+    this.enhancedTestFormData = {
+      name: '',
+      query: '',
+      expectedChunkIds: '',
+      category: '',
+      language: '',
+      difficulty: '',
+      documentScope: '',
+      expectedAnswer: '',
+      keyPoints: ''
+    };
+  }
+
+  closeEnhancedTestForm(): void {
+    this.showEnhancedTestForm = false;
+    this.enhancedTestFormData = {
+      name: '',
+      query: '',
+      expectedChunkIds: '',
+      category: '',
+      language: '',
+      difficulty: '',
+      documentScope: '',
+      expectedAnswer: '',
+      keyPoints: ''
+    };
+  }
+
+  createEnhancedTest(): void {
+    if (!this.enhancedTestFormData.name.trim() || !this.enhancedTestFormData.query.trim()) return;
+    
+    this.isLoading = true;
+    const chunkIds = this.enhancedTestFormData.expectedChunkIds
+      .split(',')
+      .map(id => id.trim())
+      .filter(id => id.length > 0);
+    
+    const keyPoints = this.enhancedTestFormData.keyPoints
+      .split('\n')
+      .map(point => point.trim())
+      .filter(point => point.length > 0);
+    
+    const request: CreateEnhancedTestRequest = {
+      name: this.enhancedTestFormData.name,
+      query: this.enhancedTestFormData.query,
+      expectedChunkIds: chunkIds,
+      category: this.enhancedTestFormData.category || undefined,
+      language: this.enhancedTestFormData.language || undefined,
+      difficulty: this.enhancedTestFormData.difficulty || undefined,
+      documentScope: this.enhancedTestFormData.documentScope || undefined,
+      expectedAnswer: this.enhancedTestFormData.expectedAnswer || undefined,
+      keyPoints: keyPoints.length > 0 ? keyPoints : undefined
+    };
+    
+    this.evaluationService.createEnhancedTest(request)
+      .subscribe({
+        next: () => {
+          this.loadTests();
+          this.loadTestCount();
+          this.closeEnhancedTestForm();
+        },
+        error: (err) => {
+          this.error = 'Failed to create enhanced test';
+          this.isLoading = false;
+          console.error('Error creating enhanced test:', err);
+        }
+      });
   }
 
   createTest(): void {
@@ -277,5 +389,167 @@ export class EvaluationComponent implements OnInit {
           console.error('Error exporting results:', err);
         }
       });
+  }
+
+  // New methods for enhanced features
+  openGenerateTestsForm(): void {
+    this.showGenerateTestsForm = true;
+    this.generateTestsFormData = { sampleSize: 10 };
+  }
+
+  closeGenerateTestsForm(): void {
+    this.showGenerateTestsForm = false;
+  }
+
+  generateTests(): void {
+    this.isLoading = true;
+    this.evaluationService.generateTests(this.generateTestsFormData.sampleSize)
+      .subscribe({
+        next: (tests) => {
+          this.loadTests();
+          this.loadTestCount();
+          this.closeGenerateTestsForm();
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to generate tests';
+          this.isLoading = false;
+          console.error('Error generating tests:', err);
+        }
+      });
+  }
+
+  openLoadManualTestsForm(): void {
+    this.showLoadManualTestsForm = true;
+    this.loadManualTestsFormData = { filePath: 'manual-evaluation-tests.json' };
+  }
+
+  closeLoadManualTestsForm(): void {
+    this.showLoadManualTestsForm = false;
+  }
+
+  loadManualTests(): void {
+    this.isLoading = true;
+    this.evaluationService.loadManualTests(this.loadManualTestsFormData.filePath)
+      .subscribe({
+        next: (tests) => {
+          this.loadTests();
+          this.loadTestCount();
+          this.closeLoadManualTestsForm();
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to load manual tests';
+          this.isLoading = false;
+          console.error('Error loading manual tests:', err);
+        }
+      });
+  }
+
+  filterByCategory(category: string): void {
+    this.selectedCategory = category;
+    this.selectedLanguage = '';
+    if (category) {
+      this.evaluationService.getTestsByCategory(category)
+        .subscribe({
+          next: (data) => {
+            this.tests = data;
+          },
+          error: (err) => {
+            this.error = 'Failed to filter tests by category';
+            console.error('Error filtering by category:', err);
+          }
+        });
+    } else {
+      this.loadTests();
+    }
+  }
+
+  filterByLanguage(language: string): void {
+    this.selectedLanguage = language;
+    this.selectedCategory = '';
+    if (language) {
+      this.evaluationService.getTestsByLanguage(language)
+        .subscribe({
+          next: (data) => {
+            this.tests = data;
+          },
+          error: (err) => {
+            this.error = 'Failed to filter tests by language';
+            console.error('Error filtering by language:', err);
+          }
+        });
+    } else {
+      this.loadTests();
+    }
+  }
+
+  clearFilters(): void {
+    this.selectedCategory = '';
+    this.selectedLanguage = '';
+    this.loadTests();
+  }
+
+  runSingleTest(testId: string): void {
+    this.isLoading = true;
+    this.evaluationService.runSingleTest(testId)
+      .subscribe({
+        next: (metrics) => {
+          this.isLoading = false;
+          alert('Test executed successfully. Check console for metrics.');
+          console.log('Test metrics:', metrics);
+        },
+        error: (err) => {
+          this.error = 'Failed to run single test';
+          this.isLoading = false;
+          console.error('Error running single test:', err);
+        }
+      });
+  }
+
+  // Enhanced metrics display methods
+  getEnhancedMetric(result: EvaluationResult, metricName: string): string {
+    const value = (result.metrics as any)[metricName];
+    if (value === undefined || value === null || isNaN(value)) return '-';
+    if (metricName.includes('recall') || metricName.includes('precision') || 
+        metricName.includes('faithfulness') || metricName.includes('relevance') ||
+        metricName.includes('completeness') || metricName.includes('citation') ||
+        metricName.includes('coverage') || metricName.includes('hit_rate') ||
+        metricName.includes('ndcg') || metricName.includes('map') || metricName.includes('quality')) {
+      return (value * 100).toFixed(1) + '%';
+    }
+    return value.toFixed(3);
+  }
+
+  getTestCategory(test: EvaluationTest): string {
+    return test.category || '-';
+  }
+
+  getTestLanguage(test: EvaluationTest): string {
+    return test.language || '-';
+  }
+
+  getTestDifficulty(test: EvaluationTest): string {
+    return test.difficulty || '-';
+  }
+
+  getDifficultyBadgeClass(difficulty: string): string {
+    switch (difficulty) {
+      case 'EASY': return 'bg-success';
+      case 'MEDIUM': return 'bg-warning';
+      case 'HARD': return 'bg-danger';
+      default: return 'bg-secondary';
+    }
+  }
+
+  getCategoryBadgeClass(category: string): string {
+    switch (category) {
+      case 'FACTUAL': return 'bg-primary';
+      case 'CONCEPTUAL': return 'bg-info';
+      case 'COMPARATIVE': return 'bg-warning';
+      case 'NUMERICAL': return 'bg-success';
+      case 'MULTI_HOP': return 'bg-danger';
+      default: return 'bg-secondary';
+    }
   }
 }

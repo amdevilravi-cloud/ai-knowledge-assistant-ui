@@ -11,12 +11,31 @@ export interface EvaluationTest {
   query: string;
   expectedChunkIds: string[];
   createdAt: string;
+  category?: string;
+  language?: string;
+  difficulty?: string;
+  documentScope?: string;
+  expectedAnswer?: string;
+  keyPoints?: string[];
+  expectedDocuments?: string[];
 }
 
 export interface CreateTestRequest {
   name: string;
   query: string;
   expectedChunkIds: string[];
+}
+
+export interface CreateEnhancedTestRequest {
+  name: string;
+  query: string;
+  expectedChunkIds: string[];
+  category?: string;
+  language?: string;
+  difficulty?: string;
+  documentScope?: string;
+  expectedAnswer?: string;
+  keyPoints?: string[];
 }
 
 export interface EvaluationRun {
@@ -37,12 +56,36 @@ export interface EvaluationResult {
   id: string;
   testId: string;
   runId: string;
+  query?: string;
+  expectedAnswer?: string;
   retrievedChunkIds: string[];
   metrics: {
     recallAtK?: number;
     precisionAtK?: number;
     mrr?: number;
     latency?: number;
+    recall_at_1?: number;
+    recall_at_5?: number;
+    recall_at_10?: number;
+    precision_at_1?: number;
+    precision_at_5?: number;
+    precision_at_10?: number;
+    ndcg_at_5?: number;
+    ndcg_at_10?: number;
+    map?: number;
+    hit_rate_at_5?: number;
+    hit_rate_at_10?: number;
+    coverage?: number;
+    faithfulness?: number;
+    relevance?: number;
+    completeness?: number;
+    citation_accuracy?: number;
+    overall_quality?: number;
+    test_category?: string;
+    test_language?: string;
+    test_difficulty?: string;
+    test_document_scope?: string;
+    generated_answer?: string;
   };
   latencyMs: number;
   createdAt: string;
@@ -76,6 +119,94 @@ export class EvaluationService {
       catchError((err) => {
         console.error('Error creating evaluation test:', err);
         return throwError(() => new Error('Failed to create test'));
+      })
+    );
+  }
+
+  /**
+   * Create an enhanced evaluation test with categorization
+   */
+  createEnhancedTest(request: CreateEnhancedTestRequest): Observable<EvaluationTest> {
+    return this.http.post<EvaluationTest>(`${this.apiUrl}/tests/enhanced`, request).pipe(
+      catchError((err) => {
+        console.error('Error creating enhanced evaluation test:', err);
+        return throwError(() => new Error('Failed to create enhanced test'));
+      })
+    );
+  }
+
+  /**
+   * Get tests by category
+   */
+  getTestsByCategory(category: string): Observable<EvaluationTest[]> {
+    return this.http.get<EvaluationTest[]>(`${this.apiUrl}/tests/category/${category}`).pipe(
+      catchError((err) => {
+        console.error('Error fetching tests by category:', err);
+        return throwError(() => new Error('Failed to load tests by category'));
+      })
+    );
+  }
+
+  /**
+   * Get tests by language
+   */
+  getTestsByLanguage(language: string): Observable<EvaluationTest[]> {
+    return this.http.get<EvaluationTest[]>(`${this.apiUrl}/tests/language/${language}`).pipe(
+      catchError((err) => {
+        console.error('Error fetching tests by language:', err);
+        return throwError(() => new Error('Failed to load tests by language'));
+      })
+    );
+  }
+
+  /**
+   * Generate tests using LLM
+   */
+  generateTests(sampleSize: number = 10): Observable<EvaluationTest[]> {
+    return this.http.post<EvaluationTest[]>(`${this.apiUrl}/tests/generate`, null, {
+      params: { sampleSize: sampleSize.toString() }
+    }).pipe(
+      catchError((err) => {
+        console.error('Error generating tests:', err);
+        return throwError(() => new Error('Failed to generate tests'));
+      })
+    );
+  }
+
+  /**
+   * Load manual tests from JSON file
+   */
+  loadManualTests(filePath: string = 'manual-evaluation-tests.json'): Observable<EvaluationTest[]> {
+    return this.http.post<EvaluationTest[]>(`${this.apiUrl}/tests/load-manual`, null, {
+      params: { filePath: filePath }
+    }).pipe(
+      catchError((err) => {
+        console.error('Error loading manual tests:', err);
+        return throwError(() => new Error('Failed to load manual tests'));
+      })
+    );
+  }
+
+  /**
+   * Get test count
+   */
+  getTestCount(): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/tests/count`).pipe(
+      catchError((err) => {
+        console.error('Error fetching test count:', err);
+        return throwError(() => new Error('Failed to load test count'));
+      })
+    );
+  }
+
+  /**
+   * Run a single test
+   */
+  runSingleTest(testId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/tests/${testId}/run`, {}).pipe(
+      catchError((err) => {
+        console.error('Error running single test:', err);
+        return throwError(() => new Error('Failed to run test'));
       })
     );
   }

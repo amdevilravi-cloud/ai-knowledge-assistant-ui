@@ -1,0 +1,438 @@
+<div class="agent-platform-container">
+  <div class="header">
+    <div class="header-content">
+      <h2>Enterprise AI Agent Platform</h2>
+      <p class="header-subtitle">Autonomous workflow orchestration with artifact generation</p>
+    </div>
+    <div class="status-indicator" *ngIf="agentStatus">
+      <div class="status-card">
+        <div class="status-item">
+          <span class="status-label">Status:</span>
+          <span class="status-value status-running">{{ agentStatus.status }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Active Contexts:</span>
+          <span class="status-value">{{ agentStatus.activeContexts }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Available Tools:</span>
+          <span class="status-value">{{ agentStatus.registeredTools }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State Machine Visualization -->
+  <div class="state-machine" *ngIf="execution && execution.plannerDecision">
+    <h3>Execution State Machine</h3>
+    <div class="state-flow">
+      <div class="state-node" [class.active]="execution.plannerDecision.includes('PLAN')">
+        <span class="state-icon">🧠</span>
+        <span class="state-label">PLAN</span>
+      </div>
+      <div class="state-arrow">→</div>
+      <div class="state-node" [class.active]="execution.plannerDecision.includes('EXECUTE')">
+        <span class="state-icon">⚡</span>
+        <span class="state-label">EXECUTE</span>
+      </div>
+      <div class="state-arrow">→</div>
+      <div class="state-node" [class.active]="execution.plannerDecision.includes('OBSERVE')">
+        <span class="state-icon">👁️</span>
+        <span class="state-label">OBSERVE</span>
+      </div>
+      <div class="state-arrow">→</div>
+      <div class="state-node" [class.active]="execution.plannerDecision.includes('ANALYZE')">
+        <span class="state-icon">🔍</span>
+        <span class="state-label">ANALYZE</span>
+      </div>
+      <div class="state-arrow">→</div>
+      <div class="state-node" [class.active]="execution.plannerDecision.includes('GENERATE')">
+        <span class="state-icon">✨</span>
+        <span class="state-label">GENERATE</span>
+      </div>
+      <div class="state-arrow">→</div>
+      <div class="state-node" [class.active]="execution.plannerDecision.includes('REVIEW')">
+        <span class="state-icon">🔍</span>
+        <span class="state-label">REVIEW</span>
+      </div>
+      <div class="state-arrow">→</div>
+      <div class="state-node" [class.active]="execution.plannerDecision.includes('FINISH')">
+        <span class="state-icon">✅</span>
+        <span class="state-label">FINISH</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Left Panel: Input Form -->
+    <div class="input-panel">
+      <div class="form-section">
+        <h3>Define Agent Goal</h3>
+        <div class="form-group">
+          <label for="goal">Goal *</label>
+          <textarea 
+            id="goal" 
+            [(ngModel)]="goal"
+            placeholder="Enter your goal for the agent (e.g., 'Create a thesis document on Kaleshwaram project')..."
+            rows="4"
+            [disabled]="isLoading">
+          </textarea>
+          <div class="form-hint">Be specific about the desired outcome and any constraints</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="context">Context (optional)</label>
+            <input 
+              id="context" 
+              type="text" 
+              [(ngModel)]="context" 
+              placeholder="Additional context..."
+              [disabled]="isLoading">
+          </div>
+
+          <div class="form-group">
+            <label for="conversationId">Conversation ID (optional)</label>
+            <input 
+              id="conversationId" 
+              type="text" 
+              [(ngModel)]="conversationId" 
+              placeholder="Conversation ID..."
+              [disabled]="isLoading">
+          </div>
+
+          <div class="form-group">
+            <label for="knowledgeBaseId">Knowledge Base ID (optional)</label>
+            <input 
+              id="knowledgeBaseId" 
+              type="text" 
+              [(ngModel)]="knowledgeBaseId" 
+              placeholder="Knowledge Base ID..."
+              [disabled]="isLoading">
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button 
+            (click)="executeAgent()" 
+            [disabled]="isLoading || !goal.trim()"
+            class="btn btn-primary btn-large">
+            <span *ngIf="isLoading" class="btn-loading">
+              <span class="spinner"></span>
+              Executing...
+            </span>
+            <span *ngIf="!isLoading">
+              <span class="btn-icon">🚀</span>
+              Execute Agent
+            </span>
+          </button>
+          
+          <button 
+            (click)="generatePlan()" 
+            [disabled]="isLoading || !goal.trim()"
+            class="btn btn-secondary">
+            <span *ngIf="isLoading">Generating...</span>
+            <span *ngIf="!isLoading">
+              <span class="btn-icon">📋</span>
+              Generate Plan
+            </span>
+          </button>
+          
+          <button 
+            (click)="clearForm()" 
+            [disabled]="isLoading"
+            class="btn btn-outline">
+            <span class="btn-icon">🔄</span>
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        <span class="error-icon">⚠️</span>
+        {{ errorMessage }}
+      </div>
+
+      <div class="available-tools" *ngIf="hasAvailableTools">
+        <h3>Available Tools</h3>
+        <div class="tools-grid">
+          <div class="tool-card" *ngFor="let tool of availableTools | keyvalue">
+            <div class="tool-icon">🔧</div>
+            <div class="tool-info">
+              <div class="tool-name">{{ tool.key }}</div>
+              <div class="tool-description">{{ tool.value }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Execution Results -->
+    <div class="results-panel" *ngIf="execution">
+      <div class="execution-card">
+        <div class="card-header">
+          <h3>Execution Results</h3>
+          <div class="execution-status" [class.completed]="execution.completed" [class.failed]="execution.status === 'failed'">
+            {{ execution.completed ? '✅ Completed' : execution.status }}
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+          <div class="stat-item">
+            <span class="stat-label">Actions</span>
+            <span class="stat-value">{{ execution.actionsTaken?.length || 0 }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Tool Calls</span>
+            <span class="stat-value">{{ execution.toolCalls?.length || 0 }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Observations</span>
+            <span class="stat-value">{{ execution.observations?.length || 0 }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Artifacts</span>
+            <span class="stat-value">{{ execution.artifacts?.length || 0 }}</span>
+          </div>
+          <div class="stat-item" *ngIf="execution.durationMs">
+            <span class="stat-label">Duration</span>
+            <span class="stat-value">{{ (execution.durationMs / 1000).toFixed(1) }}s</span>
+          </div>
+        </div>
+
+        <!-- Planner Information -->
+        <div class="planner-section" *ngIf="execution.plannerReasoning">
+          <h4>🧠 Planner Analysis</h4>
+          <div class="planner-content">
+            <div class="planner-reasoning">
+              <strong>Reasoning:</strong>
+              <p>{{ execution.plannerReasoning }}</p>
+            </div>
+            <div class="planner-details">
+              <div class="planner-detail-item" *ngIf="execution.plannerDecision">
+                <span class="detail-label">State:</span>
+                <span class="detail-value">{{ getStateIcon(execution.plannerDecision) }} {{ execution.plannerDecision }}</span>
+              </div>
+              <div class="planner-detail-item" *ngIf="execution.plannerNextStep">
+                <span class="detail-label">Next Step:</span>
+                <span class="detail-value">{{ execution.plannerNextStep }}</span>
+              </div>
+              <div class="planner-detail-item" *ngIf="execution.plannerConfidence !== undefined">
+                <span class="detail-label">Confidence:</span>
+                <span class="detail-value confidence-badge" 
+                      [class.high-confidence]="execution.plannerConfidence >= 0.7" 
+                      [class.medium-confidence]="execution.plannerConfidence >= 0.4 && execution.plannerConfidence < 0.7"
+                      [class.low-confidence]="execution.plannerConfidence < 0.4">
+                  {{ (execution.plannerConfidence * 100).toFixed(0) }}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Artifacts Section -->
+        <div class="artifacts-section" *ngIf="hasArtifacts">
+          <h4>✨ Generated Artifacts</h4>
+          <div class="artifacts-grid">
+            <div class="artifact-card" *ngFor="let artifact of artifacts">
+              <div class="artifact-header">
+                <span class="artifact-icon">{{ getArtifactIcon(artifact.type) }}</span>
+                <span class="artifact-type">{{ artifact.type }}</span>
+                <span class="artifact-version" *ngIf="artifact.version">v{{ artifact.version }}</span>
+              </div>
+              <div class="artifact-name">{{ artifact.name }}</div>
+              <div class="artifact-meta">
+                <span class="artifact-created-by">{{ artifact.createdBy }}</span>
+                <span class="artifact-date">{{ artifact.createdAt | date:'short' }}</span>
+              </div>
+              <div class="artifact-actions">
+                <button (click)="viewArtifact(artifact)" class="btn-view">
+                  <span>👁️</span> View
+                </button>
+                <button (click)="viewArtifactVersions(artifact)" class="btn-versions" *ngIf="artifact.version && artifact.version > 1">
+                  <span>📜</span> Versions
+                </button>
+                <button (click)="downloadArtifact(artifact)" class="btn-download">
+                  <span>📥</span> Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Execution Graph Section -->
+        <div class="graph-section" *ngIf="executionGraph">
+          <div class="graph-header">
+            <h4>📊 Execution Graph</h4>
+            <button (click)="toggleExecutionGraph()" class="btn-toggle">
+              {{ showExecutionGraph ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+          
+          <div class="graph-filters" *ngIf="showExecutionGraph">
+            <button class="filter-btn" [class.active]="graphFilter === 'all'" (click)="graphFilter = 'all'">All</button>
+            <button class="filter-btn" [class.active]="graphFilter === 'milestone'" (click)="graphFilter = 'milestone'">Milestones</button>
+            <button class="filter-btn" [class.active]="graphFilter === 'tool'" (click)="graphFilter = 'tool'">Tools</button>
+            <button class="filter-btn" [class.active]="graphFilter === 'artifact'" (click)="graphFilter = 'artifact'">Artifacts</button>
+          </div>
+          
+          <div class="graph-visualization" *ngIf="showExecutionGraph">
+            <div class="graph-stats">
+              <span class="graph-stat">Nodes: {{ getFilteredGraphNodes().length }}</span>
+              <span class="graph-stat">Edges: {{ getFilteredGraphEdges().length }}</span>
+              <span class="graph-stat" *ngIf="executionGraph.metadata?.durationMs">
+                Duration: {{ (executionGraph.metadata.durationMs / 1000).toFixed(1) }}s
+              </span>
+            </div>
+            
+            <div class="graph-nodes">
+              <div class="graph-node" *ngFor="let node of getFilteredGraphNodes()" [class.node-milestone]="node.nodeType === 'MILESTONE'" [class.node-tool]="node.nodeType === 'TOOL'" [class.node-artifact]="node.nodeType === 'ARTIFACT'">
+                <span class="node-icon">{{ getNodeIcon(node.nodeType) }}</span>
+                <span class="node-name">{{ node.name }}</span>
+                <span class="node-type">{{ node.nodeType }}</span>
+              </div>
+            </div>
+            
+            <div class="graph-edges">
+              <div class="graph-edge" *ngFor="let edge of getFilteredGraphEdges()">
+                <span class="edge-icon">{{ getEdgeIcon(edge.edgeType) }}</span>
+                <span class="edge-type">{{ edge.edgeType }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Execution Timeline -->
+        <div class="timeline-section" *ngIf="execution.actionsTaken && execution.actionsTaken.length > 0">
+          <h4>⚡ Execution Timeline</h4>
+          <div class="timeline">
+            <div class="timeline-item" *ngFor="let action of execution.actionsTaken; let i = index">
+              <div class="timeline-marker">
+                <span class="timeline-number">{{ i + 1 }}</span>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-tool">{{ action.toolName }}</span>
+                  <span class="timeline-status" [class.success]="action.status === 'completed'" [class.failed]="action.status === 'failed'">
+                    {{ action.status }}
+                  </span>
+                  <span class="timeline-duration" *ngIf="action.durationMs">{{ action.durationMs }}ms</span>
+                </div>
+                <div class="timeline-description">{{ action.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool Calls -->
+        <div class="tool-calls-section" *ngIf="execution.toolCalls && execution.toolCalls.length > 0">
+          <h4>🔧 Tool Calls</h4>
+          <div class="tool-calls-list">
+            <div class="tool-call-item" *ngFor="let toolCall of execution.toolCalls">
+              <div class="tool-call-header">
+                <span class="tool-call-name">{{ toolCall.toolName }}</span>
+                <span class="tool-call-success" [class.success]="toolCall.success">
+                  {{ toolCall.success ? '✅ Success' : '❌ Failed' }}
+                </span>
+                <span class="tool-call-duration">{{ toolCall.durationMs }}ms</span>
+              </div>
+              <div class="tool-call-result">
+                <strong>Result:</strong>
+                <p>{{ toolCall.result }}</p>
+              </div>
+              <div class="tool-call-error" *ngIf="toolCall.errorMessage">
+                <strong>Error:</strong> {{ toolCall.errorMessage }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observations -->
+        <div class="observations-section" *ngIf="execution.observations && execution.observations.length > 0">
+          <h4>👁️ Observations</h4>
+          <div class="observations-list">
+            <div class="observation-item" *ngFor="let observation of execution.observations">
+              <div class="observation-header">
+                <span class="observation-tool">{{ observation.toolName }}</span>
+                <span class="observation-timestamp">{{ observation.timestamp | date:'short' }}</span>
+                <span class="observation-success" [class.success]="observation.success">
+                  {{ observation.success ? '✅' : '❌' }}
+                </span>
+              </div>
+              <div class="observation-content">{{ observation.content }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Answer -->
+        <div class="final-answer-section" *ngIf="execution.answer">
+          <h4>💬 Final Answer</h4>
+          <div class="answer-content">
+            <p>{{ execution.answer }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Artifact Modal -->
+  <div class="modal-overlay" *ngIf="showArtifactModal" (click)="closeArtifactModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ selectedArtifact?.name }}</h3>
+        <button (click)="closeArtifactModal()" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="artifact-details">
+          <div class="artifact-detail-item">
+            <strong>Type:</strong> {{ selectedArtifact?.type }}
+          </div>
+          <div class="artifact-detail-item" *ngIf="selectedArtifact?.version">
+            <strong>Version:</strong> v{{ selectedArtifact?.version }}
+          </div>
+          <div class="artifact-detail-item" *ngIf="selectedArtifact?.parentArtifactId">
+            <strong>Parent ID:</strong> {{ selectedArtifact?.parentArtifactId }}
+          </div>
+          <div class="artifact-detail-item">
+            <strong>Created By:</strong> {{ selectedArtifact?.createdBy }}
+          </div>
+          <div class="artifact-detail-item">
+            <strong>Created At:</strong> {{ selectedArtifact?.createdAt | date:'medium' }}
+          </div>
+        </div>
+        
+        <!-- Artifact Versions -->
+        <div class="artifact-versions" *ngIf="showArtifactVersions && artifactVersions.length > 0">
+          <h4>📜 Version History</h4>
+          <div class="versions-list">
+            <div class="version-item" *ngFor="let version of artifactVersions" [class.current-version]="version.artifactId === selectedArtifact?.artifactId">
+              <div class="version-header">
+                <span class="version-number">v{{ version.version }}</span>
+                <span class="version-date">{{ version.createdAt | date:'short' }}</span>
+                <button *ngIf="version.artifactId !== selectedArtifact?.artifactId && version.version" (click)="rollbackArtifact(version.artifactId, version.version)" class="btn-rollback">
+                  Rollback
+                </button>
+              </div>
+              <div class="version-content-preview">
+                {{ version.content.substring(0, 100) }}...
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="artifact-content-display">
+          <pre>{{ selectedArtifact?.content }}</pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="downloadArtifact(selectedArtifact!)" class="btn btn-primary">
+          📥 Download
+        </button>
+        <button (click)="closeArtifactModal()" class="btn btn-outline">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
