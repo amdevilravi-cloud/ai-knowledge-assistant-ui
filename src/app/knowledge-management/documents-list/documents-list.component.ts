@@ -2,10 +2,10 @@ import { Component, OnInit, inject, ViewChild, ElementRef } from '@angular/core'
 import { MatDialog } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DocumentMetadata, DocumentService, DocumentUploadResponse, DocumentVersion } from '../core/services/document.service';
+import { DocumentMetadata, DocumentService, DocumentUploadResponse, DocumentVersion } from '../../core/services/document.service';
 import { Observable } from 'rxjs';
-import { CollectionsService } from '../core/services/collections.service';
-import { KnowledgeBasesService } from '../core/services/knowledge-bases.service';
+import { CollectionsService } from '../../core/services/collections.service';
+import { KnowledgeBasesService } from '../../core/services/knowledge-bases.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -17,7 +17,8 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { AdvancedSearchComponent, AdvancedSearchParams } from '../shared/advanced-search/advanced-search.component';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { AdvancedSearchComponent, AdvancedSearchParams } from '../../shared/advanced-search/advanced-search.component';
 
 interface KnowledgeBase {
   id: string;
@@ -32,9 +33,8 @@ interface Collection {
   description: string;
 }
 
-
 @Component({
-  selector: 'app-documents',
+  selector: 'app-documents-list',
   standalone: true,
   imports: [
     CommonModule,
@@ -50,12 +50,13 @@ interface Collection {
     MatChipsModule,
     MatDatepickerModule,
     MatNativeDateModule,
+    MatFormFieldModule,
     AdvancedSearchComponent
   ],
-  templateUrl: './documents.component.html',
-  styleUrls: ['./documents.component.css'],
+  templateUrl: './documents-list.component.html',
+  styleUrls: ['./documents-list.component.css'],
 })
-export class DocumentsComponent implements OnInit {
+export class DocumentsListComponent implements OnInit {
   private documentService = inject(DocumentService);
   private collectionsService = inject(CollectionsService);
   private knowledgeBasesService = inject(KnowledgeBasesService);
@@ -139,11 +140,7 @@ export class DocumentsComponent implements OnInit {
 
   onAdvancedSearch(params: AdvancedSearchParams): void {
     console.log('Advanced search params:', params);
-    // Apply advanced search filters
     this.searchQuery = params.query;
-    
-    // Additional filtering logic can be implemented here
-    // For now, this will trigger a reload with the search query
     this.loadDocuments();
   }
 

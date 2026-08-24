@@ -1,22 +1,27 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgentPlatformService, AgentRequest, Execution, ExecutionContext, Artifact, ExecutionGraph, ExecutionNode } from '../core/services/agent-platform.service';
+import { KnowledgeBasesService } from '../core/services/knowledge-bases.service';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 @Component({
   selector: 'app-agent-platform',
   standalone: true, 
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatSelectModule, MatFormFieldModule],
   templateUrl: './agent-platform.component.html',
   styleUrls: ['./agent-platform.component.css'],
 })
 export class AgentPlatformComponent implements OnInit {
   private agentPlatformService = inject(AgentPlatformService);
+  private knowledgeBasesService = inject(KnowledgeBasesService);
 
   goal = '';
   context = '';
   conversationId = '';
   knowledgeBaseId = '';
+  knowledgeBases: any[] = [];
   
   isLoading = false;
   errorMessage = '';
@@ -38,10 +43,94 @@ export class AgentPlatformComponent implements OnInit {
   showExecutionGraph = false;
   executionGraph: ExecutionGraph | null = null;
   graphFilter: 'all' | 'milestone' | 'tool' | 'artifact' = 'all';
+  selectedGraphNode: ExecutionNode | null = null;
+  
+  // Milestone tracking
+  private readonly MILESTONES = [
+    'Collect Information',
+    'Analyze Information',
+    'Generate Outline',
+    'Write Document',
+    'Review Document',
+    'Complete'
+  ];
+  
+  // Artifact filtering
+  artifactFilter: 'all' | 'document' | 'outline' | 'analysis' | 'review' = 'all';
+  
+  // Error handling
+  isCriticalError = false;
+  loadingStage: 'initializing' | 'executing' | 'processing' | 'completing' = 'initializing';
+  
+  // Workflow visualization
+  showWorkflowView = false;
+  
+  // Keyboard shortcuts
+  showKeyboardShortcuts = false;
+  
+  // Dark mode
+  isDarkMode = false;
 
   ngOnInit(): void {
     this.loadAvailableTools();
     this.loadAgentStatus();
+    this.loadDarkModePreference();
+    this.loadKnowledgeBases();
+  }
+  
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    // Don't trigger shortcuts when typing in input fields
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    
+    // Ctrl/Cmd + Enter: Execute agent
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      if (!this.isLoading && this.goal.trim()) {
+        this.executeAgent();
+      }
+    }
+    
+    // Ctrl/Cmd + K: Clear form
+    if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+      event.preventDefault();
+      if (!this.isLoading) {
+        this.clearForm();
+      }
+    }
+    
+    // Ctrl/Cmd + P: Generate plan
+    if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
+      event.preventDefault();
+      if (!this.isLoading && this.goal.trim()) {
+        this.generatePlan();
+      }
+    }
+    
+    // Escape: Close modals and clear selections
+    if (event.key === 'Escape') {
+      this.closeArtifactModal();
+      this.selectedGraphNode = null;
+      this.clearError();
+    }
+    
+    // F: Toggle workflow view
+    if (event.key === 'f' && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      if (this.execution) {
+        this.toggleWorkflowView();
+      }
+    }
+    
+    // G: Toggle execution graph
+    if (event.key === 'g' && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      if (this.executionGraph) {
+        this.toggleExecutionGraph();
+      }
+    }
   }
 
   loadAvailableTools(): void {
@@ -67,14 +156,28 @@ export class AgentPlatformComponent implements OnInit {
     });
   }
 
+  loadKnowledgeBases(): void {
+    this.knowledgeBasesService.getKnowledgeBases().subscribe({
+      next: (data) => {
+        this.knowledgeBases = data;
+      },
+      error: (err) => {
+        console.error('Error loading knowledge bases:', err);
+      }
+    });
+  }
+
   executeAgent(): void {
     if (!this.goal.trim()) {
       this.errorMessage = 'Please enter a goal';
+      this.isCriticalError = false;
       return;
     }
 
     this.isLoading = true;
+    this.loadingStage = 'executing';
     this.errorMessage = '';
+    this.isCriticalError = false;
     this.execution = null;
     this.artifacts = [];
 
@@ -87,6 +190,7 @@ export class AgentPlatformComponent implements OnInit {
 
     this.agentPlatformService.executeAgent(request).subscribe({
       next: (response) => {
+        this.loadingStage = 'completing';
         this.execution = response;
         this.artifacts = response.artifacts || [];
         this.executionGraph = response.executionGraph || null;
@@ -101,6 +205,7 @@ export class AgentPlatformComponent implements OnInit {
       error: (error) => {
         console.error('Error executing agent:', error);
         this.isLoading = false;
+        this.isCriticalError = error.status === 0;
         this.errorMessage = error.status === 0 
           ? 'Connection failed. Agent platform is not running at http://localhost:8081'
           : `Error: ${error.status} - ${error.statusText}`;
@@ -200,6 +305,10 @@ export class AgentPlatformComponent implements OnInit {
   toggleExecutionGraph(): void {
     this.showExecutionGraph = !this.showExecutionGraph;
   }
+  
+  toggleWorkflowView(): void {
+    this.showWorkflowView = !this.showWorkflowView;
+  }
 
   getFilteredGraphNodes(): ExecutionNode[] {
     if (!this.executionGraph) return [];
@@ -240,6 +349,35 @@ export class AgentPlatformComponent implements OnInit {
       default: return '→';
     }
   }
+  
+  // Enhanced graph methods
+  selectGraphNode(node: ExecutionNode): void {
+    this.selectedGraphNode = this.selectedGraphNode?.nodeId === node.nodeId ? null : node;
+  }
+  
+  exportGraph(): void {
+    if (!this.executionGraph) return;
+    
+    const graphData = {
+      graphId: this.executionGraph.graphId,
+      executionId: this.executionGraph.executionId,
+      goal: this.executionGraph.goal,
+      nodes: this.executionGraph.nodes,
+      edges: this.executionGraph.edges,
+      metadata: this.executionGraph.metadata,
+      exportedAt: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(graphData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `execution-graph-${this.executionGraph.executionId}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   downloadArtifact(artifact: Artifact): void {
     const blob = new Blob([artifact.content], { type: artifact.mimeType });
@@ -271,6 +409,16 @@ export class AgentPlatformComponent implements OnInit {
     return this.artifacts && this.artifacts.length > 0;
   }
 
+  getSuccessfulActionsCount(): number {
+    if (!this.execution || !this.execution.toolCalls) return 0;
+    return this.execution.toolCalls.filter(call => call.success).length;
+  }
+
+  getFailedActionsCount(): number {
+    if (!this.execution || !this.execution.toolCalls) return 0;
+    return this.execution.toolCalls.filter(call => !call.success).length;
+  }
+
   getArtifactIcon(type: string): string {
     const typeLower = type.toLowerCase();
     if (typeLower.includes('document') || typeLower.includes('thesis')) {
@@ -296,5 +444,159 @@ export class AgentPlatformComponent implements OnInit {
     if (stateLower.includes('respond')) return '💬';
     if (stateLower.includes('finish')) return '✅';
     return '🔄';
+  }
+  
+  // Milestone methods
+  getMilestones(): string[] {
+    return this.MILESTONES;
+  }
+  
+  getMilestoneProgress(): number {
+    if (!this.execution || !this.execution.completedMilestones) {
+      return 0;
+    }
+    const completedCount = this.execution.completedMilestones.length;
+    const totalMilestones = this.MILESTONES.length;
+    return Math.round((completedCount / totalMilestones) * 100);
+  }
+  
+  isCurrentMilestone(milestone: string): boolean {
+    return this.execution?.currentMilestone === milestone;
+  }
+  
+  isMilestoneCompleted(milestone: string): boolean {
+    return this.execution?.completedMilestones?.includes(milestone) || false;
+  }
+  
+  getMilestoneIcon(milestone: string): string {
+    const milestoneLower = milestone.toLowerCase();
+    if (milestoneLower.includes('collect')) return '🔍';
+    if (milestoneLower.includes('analyze')) return '🧠';
+    if (milestoneLower.includes('outline')) return '📋';
+    if (milestoneLower.includes('write') || milestoneLower.includes('document')) return '📝';
+    if (milestoneLower.includes('review')) return '✅';
+    if (milestoneLower.includes('complete')) return '🎉';
+    return '📍';
+  }
+  
+  getMilestoneDescription(milestone: string): string {
+    switch (milestone) {
+      case 'Collect Information':
+        return 'Gather relevant information through knowledge searches';
+      case 'Analyze Information':
+        return 'Synthesize collected information into analysis';
+      case 'Generate Outline':
+        return 'Create structured outline from analysis';
+      case 'Write Document':
+        return 'Generate complete document from outline';
+      case 'Review Document':
+        return 'Review and validate the generated document';
+      case 'Complete':
+        return 'Workflow completion';
+      default:
+        return 'Processing milestone';
+    }
+  }
+
+  // State machine methods
+  isStateActive(state: string): boolean {
+    if (!this.execution?.plannerDecision) return false;
+    return this.execution.plannerDecision.includes(state);
+  }
+  
+  // Artifact filtering methods
+  getFilteredArtifacts(): Artifact[] {
+    if (this.artifactFilter === 'all') {
+      return this.artifacts;
+    }
+    
+    return this.artifacts.filter(artifact => {
+      const typeLower = artifact.type.toLowerCase();
+      switch (this.artifactFilter) {
+        case 'document':
+          return typeLower.includes('document') || typeLower.includes('thesis') || typeLower.includes('report');
+        case 'outline':
+          return typeLower.includes('outline') || typeLower.includes('synthesis') || typeLower.includes('insight');
+        case 'analysis':
+          return typeLower.includes('analysis') || typeLower.includes('analyze');
+        case 'review':
+          return typeLower.includes('review');
+        default:
+          return true;
+      }
+    });
+  }
+  
+  // Error handling methods
+  isConnectionError(): boolean {
+    return this.errorMessage?.includes('Connection failed') || this.errorMessage?.includes('not running');
+  }
+  
+  retryConnection(): void {
+    this.loadAvailableTools();
+    this.loadAgentStatus();
+    this.clearError();
+  }
+  
+  clearError(): void {
+    this.errorMessage = '';
+    this.isCriticalError = false;
+  }
+  
+  // Loading state methods
+  getLoadingMessage(): string {
+    switch (this.loadingStage) {
+      case 'initializing':
+        return 'Initializing agent...';
+      case 'executing':
+        return 'Agent is working on your goal...';
+      case 'processing':
+        return 'Processing results...';
+      case 'completing':
+        return 'Finalizing execution...';
+      default:
+        return 'Processing...';
+    }
+  }
+  
+  getLoadingSubtext(): string {
+    switch (this.loadingStage) {
+      case 'executing':
+        return 'This may take a moment depending on the complexity of your request';
+      case 'processing':
+        return 'Analyzing and synthesizing information';
+      case 'completing':
+        return 'Almost done...';
+      default:
+        return 'Please wait';
+    }
+  }
+  
+  // Dark mode methods
+  loadDarkModePreference(): void {
+    const savedPreference = localStorage.getItem('darkMode');
+    if (savedPreference !== null) {
+      this.isDarkMode = savedPreference === 'true';
+      this.applyDarkMode();
+    } else {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.isDarkMode = prefersDark;
+      this.applyDarkMode();
+    }
+  }
+  
+  toggleDarkMode(): void {
+    this.isDarkMode = !this.isDarkMode;
+    localStorage.setItem('darkMode', this.isDarkMode.toString());
+    this.applyDarkMode();
+  }
+  
+  applyDarkMode(): void {
+    if (this.isDarkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
   }
 }

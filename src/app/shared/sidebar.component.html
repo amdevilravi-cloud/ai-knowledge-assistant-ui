@@ -2,38 +2,75 @@
   <ul class="nav flex-column">
     <li class="nav-item">
       <a
-        routerLink="/chat"
+        routerLink="/chat-hub"
         routerLinkActive="active"
         class="nav-link d-flex align-items-center"
       >
-        <i class="bi bi-chat-dots me-2"></i> Chat
+        <i class="bi bi-chat-dots me-2"></i> All Conversations
       </a>
     </li>
+    
+    <!-- Knowledge Bases Section -->
     <li class="nav-item">
       <a
-        routerLink="/documents"
+        routerLink="/knowledge-management"
         routerLinkActive="active"
         class="nav-link d-flex align-items-center"
-      >
-        <i class="bi bi-file-earmark-pdf me-2"></i> Documents
-      </a>
-    </li>
-    <li class="nav-item">
-      <a
-        routerLink="/knowledge-bases"
-        routerLinkActive="active"
-        class="nav-link d-flex align-items-center"
+        (click)="toggleKnowledgeBases()"
       >
         <i class="bi bi-database me-2"></i> Knowledge Bases
+        <i class="bi ms-auto" [ngClass]="showKnowledgeBases ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+      </a>
+      <ul class="nav flex-column sub-nav ms-3" *ngIf="showKnowledgeBases">
+        <li class="nav-item">
+          <a
+            routerLink="/knowledge-management"
+            [queryParams]="{ tab: 'knowledge-bases' }"
+            routerLinkActive="active"
+            class="nav-link d-flex align-items-center"
+          >
+            <i class="bi bi-database me-2"></i> Knowledge Management
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            routerLink="/knowledge-management"
+            [queryParams]="{ tab: 'collections' }"
+            routerLinkActive="active"
+            class="nav-link d-flex align-items-center"
+          >
+            <i class="bi bi-folder me-2"></i> Collections
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            routerLink="/knowledge-management"
+            [queryParams]="{ tab: 'documents' }"
+            routerLinkActive="active"
+            class="nav-link d-flex align-items-center"
+          >
+            <i class="bi bi-file-earmark-pdf me-2"></i> Documents
+          </a>
+        </li>
+      </ul>
+    </li>
+    
+    <li class="nav-item">
+      <a
+        routerLink="/agent-platform"
+        routerLinkActive="active"
+        class="nav-link d-flex align-items-center"
+      >
+        <i class="bi bi-robot me-2"></i> Agent Platform
       </a>
     </li>
     <li class="nav-item">
       <a
-        routerLink="/collections"
+        routerLink="/dashboard"
         routerLinkActive="active"
         class="nav-link d-flex align-items-center"
       >
-        <i class="bi bi-folder me-2"></i> Collections
+        <i class="bi bi-speedometer2 me-2"></i> Dashboard
       </a>
     </li>
     <li class="nav-item">
@@ -43,15 +80,6 @@
         class="nav-link d-flex align-items-center"
       >
         <i class="bi bi-graph-up me-2"></i> Evaluation
-      </a>
-    </li>
-    <li class="nav-item">
-      <a
-        routerLink="/conversations"
-        routerLinkActive="active"
-        class="nav-link d-flex align-items-center"
-      >
-        <i class="bi bi-clock-history me-2"></i> All Conversations
       </a>
     </li>
   </ul>

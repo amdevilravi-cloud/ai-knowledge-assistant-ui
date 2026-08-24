@@ -17,9 +17,14 @@ export class SidebarComponent implements OnInit {
   recentConversations: Conversation[] = [];
   loading = false;
   showConversations = true;
+  showKnowledgeBases = false;
 
   ngOnInit(): void {
     this.loadRecentConversations();
+  }
+
+  toggleKnowledgeBases(): void {
+    this.showKnowledgeBases = !this.showKnowledgeBases;
   }
 
   loadRecentConversations(): void {
@@ -40,7 +45,7 @@ export class SidebarComponent implements OnInit {
   }
 
   openConversation(conversationId: string): void {
-    this.router.navigate(['/chat'], { queryParams: { conversationId } });
+    this.router.navigate(['/chat-hub'], { queryParams: { tab: 'chat', conversationId } });
   }
 
   toggleConversations(): void {

@@ -61,7 +61,7 @@ export class DocumentService {
     return this.http.get<DocumentMetadata[]>(this.apiUrl);
   }
 
-  uploadDocument(file: File): Observable<DocumentUploadResponse> {
+  uploadDocument(file: File, knowledgeBaseId?: string, collectionId?: string): Observable<DocumentUploadResponse> {
     // Validate file before upload
     const validation = this.validateFile(file);
     if (!validation.valid) {
@@ -70,6 +70,12 @@ export class DocumentService {
 
     const formData = new FormData();
     formData.append('file', file);
+    if (knowledgeBaseId) {
+      formData.append('knowledgeBaseId', knowledgeBaseId);
+    }
+    if (collectionId) {
+      formData.append('collectionId', collectionId);
+    }
     return this.http.post<DocumentUploadResponse>(`${this.apiUrl}/upload`, formData);
   }
 

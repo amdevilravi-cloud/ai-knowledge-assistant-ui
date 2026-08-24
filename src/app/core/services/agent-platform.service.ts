@@ -29,6 +29,9 @@ export interface Execution {
   startedAt?: string;
   completedAt?: string;
   durationMs?: number;
+  currentMilestone?: string;
+  completedMilestones?: string[];
+  correlationId?: string;
 }
 
 export interface Artifact {

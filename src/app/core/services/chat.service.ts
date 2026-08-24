@@ -81,10 +81,15 @@ export class ChatService {
   /**
    * RAG-enhanced chat with document retrieval
    */
-  ragChat(query: string, topK: number = 5): Observable<ChatResponse> {
-    return this.http.get<ChatResponse>(`${this.chatApiUrl}/rag`, {
-      params: { message: query, topK: topK.toString() },
-    });
+  ragChat(query: string, topK: number = 5, knowledgeBaseId?: string, collectionId?: string): Observable<ChatResponse> {
+    const params: any = { message: query, topK: topK.toString() };
+    if (knowledgeBaseId) {
+      params.knowledgeBaseId = knowledgeBaseId;
+    }
+    if (collectionId) {
+      params.collectionId = collectionId;
+    }
+    return this.http.get<ChatResponse>(`${this.chatApiUrl}/rag`, { params });
   }
 
   /**
